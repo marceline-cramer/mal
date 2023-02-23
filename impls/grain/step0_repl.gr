@@ -1,0 +1,21 @@
+module Mal_step0_repl
+
+include "sys/file"
+
+let read = () => {
+  print("user> ")
+  let stdin = File.stdin
+  let max = 1024
+  let line = File.fdRead(stdin, max)
+  line
+}
+
+let eval = (input) => input
+
+let print = (input) => print(input)
+
+while(true) {
+  let line = read()
+  let result = eval(line)
+  print(result)
+}
