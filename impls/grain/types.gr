@@ -7,6 +7,8 @@ include "string"
 provide type Environment = ImmutableMap.ImmutableMap<String, MalType>,
 
 provide enum MalType {
+  Nil,
+  Bool(Bool),
   Symbol(String),
   Number(Number),
   List(List<MalType>),
@@ -15,6 +17,9 @@ provide enum MalType {
 
 provide let rec pr_str = (val) => {
   match (val) {
+    Nil => "nil",
+    Bool(true) => "true",
+    Bool(false) => "false",
     Symbol(sym) => sym,
     Number(num) => toString(num),
     List(list) => {

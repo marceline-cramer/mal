@@ -103,7 +103,14 @@ let rec read_list = (reader) => {
 read_atom = (reader, tok) => {
   match (Number.parseInt(tok, 10)) {
     Ok(number) => Ok(Types.Number(number)),
-    Err(_) => Ok(Types.Symbol(tok)),
+    Err(_) => match (String.charCodeAt(0, tok)) {
+      _ => match (tok) {
+        "nil" => Ok(Types.Nil),
+        "true" => Ok(Types.Bool(true)),
+        "false" => Ok(Types.Bool(false)),
+        symbol => Ok(Types.Symbol(symbol)),
+      }
+    }
   }
 },
 
