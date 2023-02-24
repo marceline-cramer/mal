@@ -1,0 +1,26 @@
+module Mal_step3_env
+
+include "./eval"
+include "./reader"
+include "./types"
+include "result"
+include "string"
+include "sys/file"
+
+let env = Eval.make_env()
+
+let rep = (input) => {
+  let output = match (Reader.read_str(input)) {
+    Ok(parsed) => match (Eval.eval(parsed, env)) {
+      Ok(result) => Types.pr_str(result),
+      Err(err) => err
+    },
+    Err(err) => err
+  }
+
+  print(output)
+}
+
+while(true) {
+  rep(Reader.prompt())
+}
