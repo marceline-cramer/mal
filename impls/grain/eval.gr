@@ -78,6 +78,9 @@ eval_ast = (ast, env) => {
     Types.List(list) => {
       Result.map((list) => Types.List(list), eval_list(list, env))
     },
+    Types.Vector(vec) => {
+      Result.map((vec) => Types.Vector(vec), eval_list(vec, env))
+    },
     ast => Ok(ast),
   }
 }

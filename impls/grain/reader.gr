@@ -73,13 +73,13 @@ let tokenize = (source) => {
   }
 }
 
-let rec read_list = (reader) => {
+let rec read_list = (reader, term) => {
   let mut list = []
   let mut err = None
 
   while(true) {
     match (next(reader)) {
-      Some(")") => break,
+      Some(c) when c == term => break,
       Some(_) => match (read_form(reader)) {
         Ok(val) => list = [val, ...list],
         Err(form_err) => {
@@ -96,7 +96,7 @@ let rec read_list = (reader) => {
 
   match (err) {
     Some(err) => Err(err),
-    None => Ok(Types.List(List.reverse(list)))
+    None => Ok(List.reverse(list))
   }
 },
 
@@ -125,7 +125,8 @@ read_atom = (reader, tok) => {
 
 read_form = (reader) => {
   match (peek(reader)) {
-    Some("(") => read_list(reader),
+    Some("(") => Result.map((elems) => Types.List(elems), read_list(reader, ")")),
+    Some("[") => Result.map((elems) => Types.Vector(elems), read_list(reader, "]")),
     Some(tok) => read_atom(reader, tok),
     None => Err("end of input")
   }

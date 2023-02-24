@@ -13,6 +13,7 @@ provide enum MalType {
   Symbol(String),
   Number(Number),
   List(List<MalType>),
+  Vector(List<MalType>),
   Function((List<MalType>, Environment) -> Result<MalType, String>),
 }
 
@@ -24,6 +25,11 @@ provide let rec pr_str = (val) => {
     String(str) => "\"" ++ str ++ "\"", // TODO escaping
     Symbol(sym) => sym,
     Number(num) => toString(num),
+    Vector(vector) => {
+      let strs = List.map(pr_str, vector)
+      let joined = List.join(" ", strs)
+      "[" ++ joined ++ "]"
+    },
     List(list) => {
       let strs = List.map(pr_str, list)
       let joined = List.join(" ", strs)
