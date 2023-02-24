@@ -11,9 +11,11 @@ let sub = (lhs, rhs) => lhs - rhs
 let mul = (lhs, rhs) => lhs * rhs
 let div = (lhs, rhs) => lhs / rhs
 
+let wrap = (fn) => Types.Function(fn)
+
 let wrap_op = (fn) => {
-  let cb = (ast, env) => {
-    match (ast) {
+  let cb = (args, env) => {
+    match (args) {
       [Types.Number(lhs), Types.Number(rhs)] => {
         let result = fn(lhs, rhs)
         Ok(Types.Number(result))
@@ -22,7 +24,56 @@ let wrap_op = (fn) => {
     }
   }
 
-  Types.Function(cb)
+  wrap(cb)
+}
+
+let wrap_one = (fn) => {
+  let cb = (ast, env) => {
+    match (ast) {
+      [val] => fn(val, env),
+      _ => Err("too many arguments"),
+    }
+  }
+
+  wrap(cb)
+}
+
+let wrap_list = (fn) => {
+  let cb = (val, env) => {
+    match (val) {
+      Types.List(list) => fn(list, env),
+      Types.Vector(list) => fn(list, env),
+      Types.Nil => fn([], env),
+      _ => Err("must be given a list"),
+    }
+  }
+
+  wrap_one(cb)
+}
+
+let list = (ast, env) => Ok(Types.List(ast))
+
+let is_list = (val, env) => {
+  let is_list = match (val) {
+    Types.List(_) => true,
+    _ => false,
+  }
+
+  Ok(Types.Bool(is_list))
+}
+
+let is_empty = (list, env) => Ok(Types.Bool(List.length(list) == 0))
+
+let count = (list, env) => Ok(Types.Number(List.length(list)))
+
+let pr_str = (ast, env) => {
+  let str = match (ast) {
+    [] => "",
+    [val] => Types.pr_str(val),
+    args => Types.pr_str(Types.List(args)),
+  }
+
+  Ok(Types.String(str))
 }
 
 provide let make_env: () -> Types.Env = () => {
@@ -31,6 +82,11 @@ provide let make_env: () -> Types.Env = () => {
     ("-", wrap_op(sub)),
     ("*", wrap_op(mul)),
     ("/", wrap_op(div)),
+    ("list", wrap(list)),
+    ("list?", wrap_one(is_list)),
+    ("empty?", wrap_list(is_empty)),
+    ("count", wrap_list(count)),
+    ("pr-str", wrap(pr_str)),
   ]
 
   { outer: None, data: Map.fromList(data) }
