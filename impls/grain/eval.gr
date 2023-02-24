@@ -42,6 +42,35 @@ provide let rec eval = (ast, env) => {
     Types.List([Types.Symbol("def!"), Types.Symbol(key), val]) => {
       Result.map((val) => Types.set(key, val, env), eval(val, env))
     },
+    Types.List([Types.Symbol("let*"), Types.List(bindings), body]) => {
+      let inner: Types.Env = { outer: Some(env), data: Map.make() }
+      let mut remaining = bindings
+      let mut err = None
+      while (true) {
+        match (remaining) {
+          [] => break,
+          [Types.Symbol(key), val, ...tail] => {
+            remaining = tail
+            match (eval(val, inner)) {
+              Ok(val) => { let _ = Types.set(key, val, inner) },
+              Err(eval_err) => {
+                err = Some(eval_err)
+                break
+              }
+            }
+          },
+          [_] => {
+            err = Some("uneven let* bindings")
+            break
+          }
+        }
+      }
+
+      match (err) {
+        Some(err) => Err(err),
+        None => eval(body, inner),
+      }
+    },
     Types.List(list) => {
       let evaluated = eval_list(list, env)
       Result.flatMap((list) => call_list(list, env), evaluated)
@@ -76,7 +105,7 @@ eval_list = (list, env) => {
 
 eval_ast = (ast, env) => {
   match (ast) {
-    Types.Symbol(sym) => Types.get(sym, env),
+    Types.Symbol(sym) => Types.find(sym, env),
     Types.List(list) => {
       Result.map((list) => Types.List(list), eval_list(list, env))
     },
