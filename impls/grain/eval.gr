@@ -48,7 +48,7 @@ provide let rec eval = (ast, env) => {
 call_list = (list, env) => {
   match (list) {
     [Types.Function(fn), ...args] => fn(args, env),
-    [_, ...args] => Err("cannot call list"),
+    _ => Err("cannot call list"),
   }
 },
 
