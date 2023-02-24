@@ -45,6 +45,7 @@ provide let rec pr_str = (val) => {
 
 provide let set = (key, val, env) => {
   Map.set(key, val, env.data)
+  val
 }
 
 provide let rec find = (key, env) => {
