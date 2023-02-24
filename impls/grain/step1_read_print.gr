@@ -4,17 +4,6 @@ include "./reader"
 include "./types"
 include "result"
 include "string"
-include "sys/file"
-
-let prompt = () => {
-  let prompt = String.encode("user> ", String.UTF8)
-  File.fdWrite(File.stdout, prompt)
-  let result = File.fdRead(File.stdin, 1024)
-  let (line, _len) = Result.unwrap(result)
-  let decoded = String.decode(line, String.UTF8)
-  let decoded = String.trim(decoded)
-  decoded
-}
 
 let eval = (input) => Ok(input)
 
@@ -31,5 +20,5 @@ let rep = (input) => {
 }
 
 while(true) {
-  rep(prompt())
+  rep(Reader.prompt())
 }

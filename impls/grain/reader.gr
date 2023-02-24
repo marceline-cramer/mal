@@ -6,6 +6,7 @@ include "result"
 include "number"
 include "option"
 include "string"
+include "sys/file"
 include "./types"
 
 let regex = "[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\\\.|[^\\\\\"])*\"?|;.*|[^\\s\\[\\]{}('\"`,;)]*)"
@@ -144,4 +145,14 @@ let read_tokens = (reader) => {
 
 provide let read_str = (source) => {
   Result.flatMap(read_tokens, tokenize(source))
+}
+
+provide let prompt = () => {
+  let prompt = String.encode("user> ", String.UTF8)
+  File.fdWrite(File.stdout, prompt)
+  let result = File.fdRead(File.stdin, 1024)
+  let (line, _len) = Result.unwrap(result)
+  let decoded = String.decode(line, String.UTF8)
+  let decoded = String.trim(decoded)
+  decoded
 }
