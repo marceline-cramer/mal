@@ -1,7 +1,22 @@
 module Types
 
+include "list"
+include "string"
+
 provide enum MalType {
   Symbol(String),
   Number(Number),
   List(List<MalType>)
+}
+
+provide let rec pr_str = (val) => {
+  match (val) {
+    Symbol(sym) => sym,
+    Number(num) => toString(num),
+    List(list) => {
+      let strs = List.map(pr_str, list)
+      let joined = List.join(" ", strs)
+      "(" ++ joined ++ ")"
+    }
+  }
 }
