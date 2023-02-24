@@ -95,6 +95,17 @@ provide let make_env: () -> Types.Env = () => {
 provide let rec eval = (ast, env) => {
   match (ast) {
     Types.List([]) => Ok(ast),
+    Types.List([Types.Symbol("do"), ...elems]) => {
+      match (eval_list(elems, env)) {
+        Err(err) => Err(err),
+        Ok(evaluated) => {
+          let last = List.length(evaluated) - 1
+          let last = List.nth(last, evaluated)
+          let last = Option.unwrapWithDefault(Types.Nil, last)
+          Ok(last)
+        }
+      }
+    },
     Types.List([Types.Symbol("if"), cond, then_ast]) => {
       match (eval(cond, env)) {
         Err(err) => Err(err),
