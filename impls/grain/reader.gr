@@ -15,19 +15,19 @@ provide record Reader {
   mut tokens: List<String>
 }
 
-provide let next = (reader) => {
+provide let peek = (reader) => {
   match (reader.tokens) {
-    [next, ...rest] => {
-      reader.tokens = rest
-      Some(next)
-    },
+    [current, ..._] => Some(current),
     [] => None
   }
 }
 
-provide let peek = (reader) => {
+provide let next = (reader) => {
   match (reader.tokens) {
-    [current, ..._] => Some(current),
+    [_, ...rest] => {
+      reader.tokens = rest
+      peek(reader)
+    },
     [] => None
   }
 }
@@ -92,7 +92,7 @@ let rec read_list = (reader) => {
 
   match (err) {
     Some(err) => Err(err),
-    None => Ok(Types.List(list))
+    None => Ok(Types.List(List.reverse(list)))
   }
 },
 
