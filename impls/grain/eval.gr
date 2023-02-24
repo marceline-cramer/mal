@@ -1,10 +1,12 @@
 module Eval
 
+include "./reader"
 include "./types"
 include "list"
 include "map"
 include "option"
 include "result"
+include "sys/file"
 
 let add = (lhs, rhs) => Types.Number(lhs + rhs)
 let sub = (lhs, rhs) => Types.Number(lhs - rhs)
@@ -54,6 +56,17 @@ let wrap_list = (fn) => {
   wrap_one(cb)
 }
 
+let wrap_str = (fn) => {
+  let cb = (val, env) => {
+    match (val) {
+      Types.String(str) => fn(str, env),
+      _ => Err("must be given a string"),
+    }
+  }
+
+  wrap_one(cb)
+}
+
 let list = (ast, env) => Ok(Types.List(ast))
 
 let is_list = (val, env) => {
@@ -97,6 +110,10 @@ let eq = (args, env) => {
   }
 }
 
+let read_string = (str, env) => {
+  Reader.read_str(str)
+}
+
 provide let make_env: () -> Types.Env = () => {
   let data = [
     ("+", wrap_op(add)),
@@ -113,6 +130,7 @@ provide let make_env: () -> Types.Env = () => {
     ("count", wrap_list(count)),
     ("prn", wrap_one(prn)),
     ("=", wrap(eq)),
+    ("read-string", wrap_str(read_string)),
   ]
 
   { outer: None, data: Map.fromList(data) }
