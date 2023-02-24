@@ -2,7 +2,9 @@ module Reader
 
 include "list"
 include "regex"
+include "number"
 include "string"
+include "./types"
 
 let regex = Regex.make("[\s,]")
 
@@ -33,7 +35,55 @@ let tokenize = (source) => {
 
   while(String.length(remaining) > 0) {
     tokens = [remaining, ...tokens]
+    break
   }
 
-  { tokens }
+  { tokens, }
+}
+
+let rec read_list = (reader) => {
+  let mut list = []
+  let mut err = None
+
+  while(true) {
+    match (peek(reader)) {
+      Some(")") => break,
+      Some(_) => match (read_form(reader)) {
+        Ok(val) => list = [val, ...list],
+        Err(form_err) => {
+          err = Some(form_err)
+          break
+        }
+      },
+      None => {
+        err = Some("Unexpected EOF while parsing list")
+        break
+      }
+    }
+  }
+
+  match (err) {
+    Some(err) => Err(err),
+    None => Ok(Types.List(list))
+  }
+},
+
+read_atom = (reader, tok) => {
+  match (Number.parseInt(tok, 10)) {
+    Ok(number) => Ok(Types.Number(number)),
+    Err(_) => Ok(Types.Symbol(tok)),
+  }
+},
+
+read_form = (reader) => {
+  match (peek(reader)) {
+    Some("(") => read_list(reader),
+    Some(tok) => read_atom(reader, tok),
+    None => Err("Unexpected EOF")
+  }
+}
+
+provide let read_str = (source) => {
+  let reader = tokenize(source)
+  read_form(reader)
 }
