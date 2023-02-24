@@ -25,7 +25,7 @@ let wrap_op = (fn) => {
       [Types.Number(lhs), Types.Number(rhs)] => {
         Ok(fn(lhs, rhs))
       },
-      _ => Err("Invalid arguments to operator"),
+      _ => Err("expected two numbers"),
     }
   }
 
@@ -36,7 +36,18 @@ let wrap_one = (fn) => {
   let cb = (ast, env) => {
     match (ast) {
       [val] => fn(val, env),
-      _ => Err("too many arguments"),
+      _ => Err("expected one argument"),
+    }
+  }
+
+  wrap(cb)
+}
+
+let wrap_two = (fn) => {
+  let cb = (args, env) => {
+    match (args) {
+      [lhs, rhs] => fn(lhs, rhs, env),
+      _ => Err("expected two arguments"),
     }
   }
 
@@ -114,6 +125,50 @@ let read_string = (str, env) => {
   Reader.read_str(str)
 }
 
+let atom = (val, env) => Ok(Types.Atom(box(val)))
+
+let is_atom = (val, env) => {
+  let val = match (val) {
+    Types.Atom(_) => true,
+    _ => false,
+  }
+
+  Ok(Types.Bool(val))
+}
+
+let deref = (val, env) => {
+  match (val) {
+    Types.Atom(val) => Ok(unbox(val)),
+    _ => Err("deref expects an atom"),
+  }
+}
+
+let reset = (atom, val, env) => {
+  match (atom) {
+    Types.Atom(atom) => {
+      atom := val
+      Ok(val)
+    },
+    _ => Err("expected atom")
+  }
+}
+
+let swap = (args, env) => {
+  match (args) {
+    [Types.Atom(atom), Types.Function(fn), ...args] => {
+      let args = [unbox(atom), ...args]
+      match (fn(args, env)) {
+        Err(err) => Err(err),
+        Ok(val) => {
+          atom := val
+          Ok(val)
+        },
+      }
+    },
+    _ => Err("expected atom, function, and optional arguments"),
+  }
+}
+
 provide let make_env: () -> Types.Env = () => {
   let data = [
     ("+", wrap_op(add)),
@@ -131,6 +186,11 @@ provide let make_env: () -> Types.Env = () => {
     ("prn", wrap_one(prn)),
     ("=", wrap(eq)),
     ("read-string", wrap_str(read_string)),
+    ("atom", wrap_one(atom)),
+    ("atom?", wrap_one(is_atom)),
+    ("deref", wrap_one(deref)),
+    ("reset!", wrap_two(reset)),
+    ("swap!", wrap(swap)),
   ]
 
   { outer: None, data: Map.fromList(data) }

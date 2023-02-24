@@ -18,6 +18,7 @@ provide enum MalType {
   Number(Number),
   List(List<MalType>),
   Vector(List<MalType>),
+  Atom(Box<MalType>),
   Function((List<MalType>, Env) -> Result<MalType, String>),
 }
 
@@ -39,6 +40,7 @@ provide let rec pr_str = (val) => {
       let joined = List.join(" ", strs)
       "(" ++ joined ++ ")"
     },
+    Atom(val) => "(atom " ++ pr_str(unbox(val)) ++ ")",
     Function(_) => "<function>",
   }
 }
