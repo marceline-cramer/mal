@@ -1,0 +1,32 @@
+module Mal_step1_read_print
+
+include "./reader"
+include "./types"
+include "result"
+include "string"
+include "sys/file"
+
+let prompt = () => {
+  let prompt = String.encode("user> ", String.UTF8)
+  File.fdWrite(File.stdout, prompt)
+  let result = File.fdRead(File.stdin, 1024)
+  let (line, _len) = Result.unwrap(result)
+  let decoded = String.decode(line, String.UTF8)
+  decoded
+}
+
+let read = (input) => Result.unwrap(Reader.read_str(input))
+
+let eval = (input) => input
+
+let print = (input) => print(Types.pr_str(input))
+
+let rep = (input) => {
+  let parsed = read(input)
+  let result = eval(parsed)
+  print(result)
+}
+
+while(true) {
+  rep(prompt())
+}
