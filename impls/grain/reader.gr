@@ -101,14 +101,23 @@ let rec read_list = (reader) => {
 },
 
 read_atom = (reader, tok) => {
-  match (Number.parseInt(tok, 10)) {
-    Ok(number) => Ok(Types.Number(number)),
-    Err(_) => match (String.charCodeAt(0, tok)) {
-      _ => match (tok) {
-        "nil" => Ok(Types.Nil),
-        "true" => Ok(Types.Bool(true)),
-        "false" => Ok(Types.Bool(false)),
-        symbol => Ok(Types.Symbol(symbol)),
+  match (tok) {
+    "nil" => Ok(Types.Nil),
+    "true" => Ok(Types.Bool(true)),
+    "false" => Ok(Types.Bool(false)),
+    "\"" => Err("unbalanced"), // catch early so that parsing doesn't panic
+    _ => match (Number.parseInt(tok, 10)) {
+      Ok(number) => Ok(Types.Number(number)),
+      Err(_) => match (String.charAt(0, tok)) {
+        '"' => {
+          let last = String.length(tok) - 1
+          if (String.charAt(last, tok) != '"') {
+            Err("unbalanced")
+          } else {
+            Ok(Types.String(String.slice(1, last, tok)))
+          }
+        },
+        _ => Ok(Types.Symbol(tok)),  
       }
     }
   }

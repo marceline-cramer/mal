@@ -9,6 +9,7 @@ provide type Environment = ImmutableMap.ImmutableMap<String, MalType>,
 provide enum MalType {
   Nil,
   Bool(Bool),
+  String(String),
   Symbol(String),
   Number(Number),
   List(List<MalType>),
@@ -20,6 +21,7 @@ provide let rec pr_str = (val) => {
     Nil => "nil",
     Bool(true) => "true",
     Bool(false) => "false",
+    String(str) => "\"" ++ str ++ "\"", // TODO escaping
     Symbol(sym) => sym,
     Number(num) => toString(num),
     List(list) => {
