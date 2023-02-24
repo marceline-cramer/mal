@@ -1,0 +1,83 @@
+module Eval
+
+include "./types"
+include "list"
+include "immutablemap"
+include "option"
+include "result"
+
+let add = (lhs, rhs) => lhs + rhs
+let sub = (lhs, rhs) => lhs - rhs
+let mul = (lhs, rhs) => lhs * rhs
+let div = (lhs, rhs) => lhs / rhs
+
+let wrap_op = (fn) => {
+  let cb = (ast, env) => {
+    match (ast) {
+      [Types.Number(lhs), Types.Number(rhs)] => {
+        let result = fn(lhs, rhs)
+        Ok(Types.Number(result))
+      },
+      _ => Err("Invalid arguments to operator"),
+    }
+  }
+
+  Types.Function(cb)
+}
+
+provide let make_env = () => {
+  ImmutableMap.fromList([
+    ("+", wrap_op(add)),
+    ("-", wrap_op(sub)),
+    ("*", wrap_op(mul)),
+    ("/", wrap_op(div)),
+  ])
+}
+
+provide let rec eval = (ast, env) => {
+  match (ast) {
+    Types.List([]) => Ok(ast),
+    Types.List(list) => {
+      let evaluated = eval_list(list, env)
+      Result.flatMap((list) => call_list(list, env), evaluated)
+    },
+    ast => eval_ast(ast, env)
+  }
+},
+
+call_list = (list, env) => {
+  match (list) {
+    [Types.Function(fn), ...args] => fn(args, env),
+    [_, ...args] => Err("cannot call list"),
+  }
+},
+
+eval_list = (list, env) => {
+  match (list) {
+    [] => Ok([]),
+    [first, ...rest] => {
+      match (eval(first, env)) {
+        Err(err) => Err(err),
+        Ok(evaluated) => {
+          match (eval_list(rest, env)) {
+            Err(err) => Err(err),
+            Ok(rest) => Ok([evaluated, ...rest])
+          }
+        }
+      }
+    }
+  }
+},
+
+eval_ast = (ast, env) => {
+  match (ast) {
+    Types.Symbol(sym) => {
+      let val = ImmutableMap.get(sym, env)
+      Option.toResult("No symbol " ++ sym ++ " found", val)
+    },
+    Types.List(list) => {
+      Result.map((list) => Types.List(list), eval_list(list, env))
+    },
+    ast => Ok(ast),
+  }
+}
