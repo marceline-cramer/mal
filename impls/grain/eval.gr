@@ -6,10 +6,14 @@ include "map"
 include "option"
 include "result"
 
-let add = (lhs, rhs) => lhs + rhs
-let sub = (lhs, rhs) => lhs - rhs
-let mul = (lhs, rhs) => lhs * rhs
-let div = (lhs, rhs) => lhs / rhs
+let add = (lhs, rhs) => Types.Number(lhs + rhs)
+let sub = (lhs, rhs) => Types.Number(lhs - rhs)
+let mul = (lhs, rhs) => Types.Number(lhs * rhs)
+let div = (lhs, rhs) => Types.Number(lhs / rhs)
+let lt  = (lhs, rhs) => Types.Bool(lhs < rhs)
+let le  = (lhs, rhs) => Types.Bool(lhs <= rhs)
+let gt  = (lhs, rhs) => Types.Bool(lhs > rhs)
+let ge  = (lhs, rhs) => Types.Bool(lhs >= rhs)
 
 let wrap = (fn) => Types.Function(fn)
 
@@ -17,8 +21,7 @@ let wrap_op = (fn) => {
   let cb = (args, env) => {
     match (args) {
       [Types.Number(lhs), Types.Number(rhs)] => {
-        let result = fn(lhs, rhs)
-        Ok(Types.Number(result))
+        Ok(fn(lhs, rhs))
       },
       _ => Err("Invalid arguments to operator"),
     }
@@ -78,6 +81,10 @@ provide let make_env: () -> Types.Env = () => {
     ("-", wrap_op(sub)),
     ("*", wrap_op(mul)),
     ("/", wrap_op(div)),
+    ("<", wrap_op(lt)),
+    ("<=", wrap_op(le)),
+    (">", wrap_op(gt)),
+    (">=", wrap_op(ge)),
     ("list", wrap(list)),
     ("list?", wrap_one(is_list)),
     ("empty?", wrap_list(is_empty)),
