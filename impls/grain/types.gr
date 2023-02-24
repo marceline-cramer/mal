@@ -1,0 +1,7 @@
+module Types
+
+provide enum MalType {
+  Symbol(String),
+  Number(Number),
+  List(List<MalType>)
+}
