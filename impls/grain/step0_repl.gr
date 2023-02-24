@@ -1,7 +1,17 @@
 module Mal_step0_repl
 
-include "sys/file"
+include "result"
 include "string"
+include "sys/file"
+
+let prompt = () => {
+  let prompt = String.encode("user> ", String.UTF8)
+  File.fdWrite(File.stdout, prompt)
+  let result = File.fdRead(File.stdin, 1024)
+  let (line, _len) = Result.unwrap(result)
+  let decoded = String.decode(line, String.UTF8)
+  decoded
+}
 
 let read = (input) => {
   input
@@ -18,8 +28,5 @@ let rep = (input) => {
 }
 
 while(true) {
-  let prompt = String.encode("user> ", String.UTF8)
-  File.fdWrite(File.stdout, prompt)
-  let line = File.fdRead(File.stdin, 1024)
-  rep(line)
+  rep(prompt())
 }
