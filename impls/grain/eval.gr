@@ -66,14 +66,10 @@ let is_empty = (list, env) => Ok(Types.Bool(List.length(list) == 0))
 
 let count = (list, env) => Ok(Types.Number(List.length(list)))
 
-let pr_str = (ast, env) => {
-  let str = match (ast) {
-    [] => "",
-    [val] => Types.pr_str(val),
-    args => Types.pr_str(Types.List(args)),
-  }
-
-  Ok(Types.String(str))
+let prn = (val, env) => {
+  let str = Types.pr_str(val)
+  print(str)
+  Ok(Types.Nil)
 }
 
 provide let make_env: () -> Types.Env = () => {
@@ -86,7 +82,7 @@ provide let make_env: () -> Types.Env = () => {
     ("list?", wrap_one(is_list)),
     ("empty?", wrap_list(is_empty)),
     ("count", wrap_list(count)),
-    ("pr-str", wrap(pr_str)),
+    ("prn", wrap_one(prn)),
   ]
 
   { outer: None, data: Map.fromList(data) }
