@@ -1,2 +1,2 @@
 #!/bin/bash
-exec grain $(dirname $0)/${STEP:-stepA_mal}.gr "${@}"
+exec grain --debug $(dirname $0)/${STEP:-stepA_mal}.gr "${@}"
