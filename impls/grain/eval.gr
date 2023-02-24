@@ -95,6 +95,22 @@ provide let make_env: () -> Types.Env = () => {
 provide let rec eval = (ast, env) => {
   match (ast) {
     Types.List([]) => Ok(ast),
+    Types.List([Types.Symbol("if"), cond, then_ast]) => {
+      match (eval(cond, env)) {
+        Err(err) => Err(err),
+        Ok(Types.Bool(false)) => Ok(Types.Nil),
+        Ok(Types.Nil) => Ok(Types.Nil),
+        Ok(_) => eval(then_ast, env),
+      }
+    },
+    Types.List([Types.Symbol("if"), cond, then_ast, else_ast]) => {
+      match (eval(cond, env)) {
+        Err(err) => Err(err),
+        Ok(Types.Bool(false)) => eval(else_ast, env),
+        Ok(Types.Nil) => eval(else_ast, env),
+        Ok(_) => eval(then_ast, env),
+      }
+    },
     Types.List([Types.Symbol("def!"), Types.Symbol(key), val]) => {
       Result.map((val) => Types.set(key, val, env), eval(val, env))
     },
