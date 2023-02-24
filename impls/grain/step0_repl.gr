@@ -1,21 +1,25 @@
 module Mal_step0_repl
 
 include "sys/file"
+include "string"
 
-let read = () => {
-  print("user> ")
-  let stdin = File.stdin
-  let max = 1024
-  let line = File.fdRead(stdin, max)
-  line
+let read = (input) => {
+  input
 }
 
 let eval = (input) => input
 
 let print = (input) => print(input)
 
-while(true) {
-  let line = read()
-  let result = eval(line)
+let rep = (input) => {
+  let parsed = read(input)
+  let result = eval(parsed)
   print(result)
+}
+
+while(true) {
+  let prompt = String.encode("user> ", String.UTF8)
+  File.fdWrite(File.stdout, prompt)
+  let line = File.fdRead(File.stdin, 1024)
+  rep(line)
 }
