@@ -122,6 +122,35 @@ provide let rec eval = (ast, env) => {
         Ok(_) => eval(then_ast, env),
       }
     },
+    Types.List([Types.Symbol("fn*"), Types.List(binds), body]) => {
+      let rec to_symbols = (list) => {
+        match (list) {
+          [] => Ok([]),
+          [Types.Symbol(symbol), ...rest] => {
+            Result.map((rest) => [symbol, ...rest], to_symbols(rest))
+          },
+          _ => Err("expected symbol"),
+        }
+      }
+
+      match (to_symbols(binds)) {
+        Err(err) => Err(err),
+        Ok(binds) => {
+          let cb = (args, env) => {
+            let env: Types.Env = { outer: Some(env), data: Map.make() }
+            let binds = List.zip(binds, args)
+            List.forEach((arg) => {
+              let (arg, bind) = arg
+              let _ = Types.set(arg, bind, env)
+            }, binds)
+
+            eval(body, env)
+          }
+
+          Ok(Types.Function(cb))
+        }
+      }
+    },
     Types.List([Types.Symbol("def!"), Types.Symbol(key), val]) => {
       Result.map((val) => Types.set(key, val, env), eval(val, env))
     },
