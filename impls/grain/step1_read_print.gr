@@ -15,16 +15,18 @@ let prompt = () => {
   decoded
 }
 
-let read = (input) => Result.unwrap(Reader.read_str(input))
-
-let eval = (input) => input
-
-let print = (input) => print(Types.pr_str(input))
+let eval = (input) => Ok(input)
 
 let rep = (input) => {
-  let parsed = read(input)
-  let result = eval(parsed)
-  print(result)
+  let output = match (Reader.read_str(input)) {
+    Ok(parsed) => match (eval(parsed)) {
+      Ok(result) => Types.pr_str(result),
+      Err(err) => err
+    },
+    Err(err) => err
+  }
+
+  print(output)
 }
 
 while(true) {

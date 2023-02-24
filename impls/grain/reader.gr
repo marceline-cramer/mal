@@ -84,7 +84,7 @@ let rec read_list = (reader) => {
         }
       },
       None => {
-        err = Some("Unexpected EOF while parsing list")
+        err = Some("unbalanced")
         break
       }
     }
@@ -107,7 +107,7 @@ read_form = (reader) => {
   match (peek(reader)) {
     Some("(") => read_list(reader),
     Some(tok) => read_atom(reader, tok),
-    None => Err("Unexpected EOF")
+    None => Err("end of input")
   }
 }
 
