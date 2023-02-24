@@ -1,0 +1,39 @@
+module Reader
+
+include "list"
+include "regex"
+include "string"
+
+let regex = Regex.make("[\s,]")
+
+provide record Reader {
+  mut tokens: List<String>
+}
+
+provide let next = (reader) => {
+  match (reader.tokens) {
+    [next, ...rest] => {
+      reader.tokens = rest
+      Some(next)
+    },
+    [] => None
+  }
+}
+
+provide let peek = (reader) => {
+  match (reader.tokens) {
+    [current, ..._] => Some(current),
+    [] => None
+  }
+}
+
+let tokenize = (source) => {
+  let mut remaining = source
+  let mut tokens = []
+
+  while(String.length(remaining) > 0) {
+    tokens = [remaining, ...tokens]
+  }
+
+  { tokens }
+}
