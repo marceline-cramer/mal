@@ -75,6 +75,28 @@ let prn = (val, env) => {
   Ok(Types.Nil)
 }
 
+let eq = (args, env) => {
+  let rec eq = (args) => match (args) {
+    (Types.Number(lhs), Types.Number(rhs)) => lhs == rhs,
+    (Types.Bool(lhs), Types.Bool(rhs)) => lhs == rhs,
+    (Types.String(lhs), Types.String(rhs)) => lhs == rhs,
+    (Types.Nil, Types.Nil) => true,
+    (Types.List(lhs), Types.List(rhs)) => {
+      if (List.length(lhs) != List.length(rhs)) {
+        false
+      } else {
+        List.every(eq, List.zip(lhs, rhs))
+      }
+    },
+    _ => false,
+  }
+
+  match (args) {
+    [lhs, rhs] => Ok(Types.Bool(eq((lhs, rhs)))),
+    _ => Err("invalid comparison")
+  }
+}
+
 provide let make_env: () -> Types.Env = () => {
   let data = [
     ("+", wrap_op(add)),
@@ -90,6 +112,7 @@ provide let make_env: () -> Types.Env = () => {
     ("empty?", wrap_list(is_empty)),
     ("count", wrap_list(count)),
     ("prn", wrap_one(prn)),
+    ("=", wrap(eq)),
   ]
 
   { outer: None, data: Map.fromList(data) }
