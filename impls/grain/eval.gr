@@ -169,33 +169,6 @@ let swap = (args, env) => {
   }
 }
 
-provide let make_env: () -> Types.Env = () => {
-  let data = [
-    ("+", wrap_op(add)),
-    ("-", wrap_op(sub)),
-    ("*", wrap_op(mul)),
-    ("/", wrap_op(div)),
-    ("<", wrap_op(lt)),
-    ("<=", wrap_op(le)),
-    (">", wrap_op(gt)),
-    (">=", wrap_op(ge)),
-    ("list", wrap(list)),
-    ("list?", wrap_one(is_list)),
-    ("empty?", wrap_list(is_empty)),
-    ("count", wrap_list(count)),
-    ("prn", wrap_one(prn)),
-    ("=", wrap(eq)),
-    ("read-string", wrap_str(read_string)),
-    ("atom", wrap_one(atom)),
-    ("atom?", wrap_one(is_atom)),
-    ("deref", wrap_one(deref)),
-    ("reset!", wrap_two(reset)),
-    ("swap!", wrap(swap)),
-  ]
-
-  { outer: None, data: Map.fromList(data) }
-}
-
 provide let rec eval = (ast, env) => {
   match (ast) {
     Types.List([]) => Ok(ast),
@@ -330,4 +303,32 @@ eval_ast = (ast, env) => {
     },
     ast => Ok(ast),
   }
+}
+
+provide let make_env: () -> Types.Env = () => {
+  let data = [
+    ("+", wrap_op(add)),
+    ("-", wrap_op(sub)),
+    ("*", wrap_op(mul)),
+    ("/", wrap_op(div)),
+    ("<", wrap_op(lt)),
+    ("<=", wrap_op(le)),
+    (">", wrap_op(gt)),
+    (">=", wrap_op(ge)),
+    ("list", wrap(list)),
+    ("list?", wrap_one(is_list)),
+    ("empty?", wrap_list(is_empty)),
+    ("count", wrap_list(count)),
+    ("prn", wrap_one(prn)),
+    ("=", wrap(eq)),
+    ("read-string", wrap_str(read_string)),
+    ("atom", wrap_one(atom)),
+    ("atom?", wrap_one(is_atom)),
+    ("deref", wrap_one(deref)),
+    ("reset!", wrap_two(reset)),
+    ("swap!", wrap(swap)),
+    ("eval", wrap_one((val, env) => eval(val, env))),
+  ]
+
+  { outer: None, data: Map.fromList(data) }
 }
