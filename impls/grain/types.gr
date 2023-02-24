@@ -1,10 +1,14 @@
 module Types
 
-include "immutablemap"
 include "list"
+include "map"
+include "option"
 include "string"
 
-provide type Environment = ImmutableMap.ImmutableMap<String, MalType>,
+provide record Env {
+  outer: Option<Env>,
+  data: Map.Map<String, MalType>,
+},
 
 provide enum MalType {
   Nil,
@@ -14,7 +18,7 @@ provide enum MalType {
   Number(Number),
   List(List<MalType>),
   Vector(List<MalType>),
-  Function((List<MalType>, Environment) -> Result<MalType, String>),
+  Function((List<MalType>, Env) -> Result<MalType, String>),
 }
 
 provide let rec pr_str = (val) => {
@@ -37,4 +41,22 @@ provide let rec pr_str = (val) => {
     },
     Function(_) => "<function>",
   }
+}
+
+provide let set = (key, val, env) => {
+  Map.set(key, val, env.data)
+}
+
+provide let rec find = (key, env) => {
+  match (Map.get(key, env.data)) {
+    Some(val) => Ok(val),
+    None => match (env.outer) {
+      Some(outer) => find(key, outer),
+      None => Err("not found"),
+    }
+  }
+}
+
+provide let get = (key, env) => {
+  Option.toResult("not found", Map.get(key, env.data))
 }

@@ -2,7 +2,7 @@ module Eval
 
 include "./types"
 include "list"
-include "immutablemap"
+include "map"
 include "option"
 include "result"
 
@@ -25,13 +25,15 @@ let wrap_op = (fn) => {
   Types.Function(cb)
 }
 
-provide let make_env = () => {
-  ImmutableMap.fromList([
+provide let make_env: () -> Types.Env = () => {
+  let data = [
     ("+", wrap_op(add)),
     ("-", wrap_op(sub)),
     ("*", wrap_op(mul)),
     ("/", wrap_op(div)),
-  ])
+  ]
+
+  { outer: None, data: Map.fromList(data) }
 }
 
 provide let rec eval = (ast, env) => {
@@ -71,10 +73,7 @@ eval_list = (list, env) => {
 
 eval_ast = (ast, env) => {
   match (ast) {
-    Types.Symbol(sym) => {
-      let val = ImmutableMap.get(sym, env)
-      Option.toResult("No symbol " ++ sym ++ " found", val)
-    },
+    Types.Symbol(sym) => Types.get(sym, env),
     Types.List(list) => {
       Result.map((list) => Types.List(list), eval_list(list, env))
     },
