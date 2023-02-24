@@ -2,11 +2,14 @@ module Reader
 
 include "list"
 include "regex"
+include "result"
 include "number"
+include "option"
 include "string"
 include "./types"
 
-let regex = Regex.make("[\s,]")
+let regex = "[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\\\.|[^\\\\\"])*\"?|;.*|[^\\s\\[\\]{}('\"`,;)]*)"
+let regex = Result.unwrap(Regex.make(regex))
 
 provide record Reader {
   mut tokens: List<String>
@@ -32,13 +35,38 @@ provide let peek = (reader) => {
 let tokenize = (source) => {
   let mut remaining = source
   let mut tokens = []
+  let mut err = None
 
   while(String.length(remaining) > 0) {
-    tokens = [remaining, ...tokens]
-    break
+    let range = match (Regex.find(regex, remaining)) {
+      Some(result) => match (result.groupPosition(0)) {
+        Some((0, end)) => {
+            let err = "Regex match group 1 is missing"
+            let position = result.groupPosition(1)
+            Option.toResult(err, position)
+        },
+        _ => Err("Token reading error")
+      },
+      _ => Err("Token reading error")
+    }
+
+    match (range) {
+      Ok((start, end)) => {
+        let token = String.slice(start, end, remaining)
+        remaining = String.slice(end, String.length(remaining), remaining)
+        tokens = [token, ...tokens]
+      },
+      Err(match_err) => {
+        err = Some(match_err)
+        break
+      }
+    }
   }
 
-  { tokens, }
+  match (err) {
+    Some(err) => Err(err),
+    None => Ok({ tokens: List.reverse(tokens), })
+  }
 }
 
 let rec read_list = (reader) => {
@@ -46,7 +74,7 @@ let rec read_list = (reader) => {
   let mut err = None
 
   while(true) {
-    match (peek(reader)) {
+    match (next(reader)) {
       Some(")") => break,
       Some(_) => match (read_form(reader)) {
         Ok(val) => list = [val, ...list],
@@ -84,6 +112,5 @@ read_form = (reader) => {
 }
 
 provide let read_str = (source) => {
-  let reader = tokenize(source)
-  read_form(reader)
+  Result.flatMap(read_form, tokenize(source))
 }
