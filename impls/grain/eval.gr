@@ -39,6 +39,9 @@ provide let make_env: () -> Types.Env = () => {
 provide let rec eval = (ast, env) => {
   match (ast) {
     Types.List([]) => Ok(ast),
+    Types.List([Types.Symbol("def!"), Types.Symbol(key), val]) => {
+      Result.map((val) => Types.set(key, val, env), eval(val, env))
+    },
     Types.List(list) => {
       let evaluated = eval_list(list, env)
       Result.flatMap((list) => call_list(list, env), evaluated)
