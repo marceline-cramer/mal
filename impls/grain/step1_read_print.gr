@@ -12,6 +12,7 @@ let prompt = () => {
   let result = File.fdRead(File.stdin, 1024)
   let (line, _len) = Result.unwrap(result)
   let decoded = String.decode(line, String.UTF8)
+  let decoded = String.trim(decoded)
   decoded
 }
 

@@ -111,6 +111,16 @@ read_form = (reader) => {
   }
 }
 
+let read_tokens = (reader) => {
+  match (read_form(reader)) {
+    Err(err) => Err(err),
+    Ok(parsed) => match (next(reader)) {
+      Some(_) => Err("trailing characters"),
+      None => Ok(parsed)
+    }
+  }
+}
+
 provide let read_str = (source) => {
-  Result.flatMap(read_form, tokenize(source))
+  Result.flatMap(read_tokens, tokenize(source))
 }
