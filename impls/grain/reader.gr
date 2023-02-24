@@ -54,7 +54,10 @@ let tokenize = (source) => {
       Ok((start, end)) => {
         let token = String.slice(start, end, remaining)
         remaining = String.slice(end, String.length(remaining), remaining)
-        tokens = [token, ...tokens]
+        tokens = match (String.startsWith(";", token)) {
+          true => tokens,
+          false => [token, ...tokens]
+        }
       },
       Err(match_err) => {
         err = Some(match_err)
