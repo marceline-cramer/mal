@@ -175,6 +175,43 @@ let swap = (args, env) => {
   }
 }
 
+let cons = (val, list, env) => {
+  match (list) {
+    Types.List(list) => Ok(Types.List([val, ...list])),
+    Types.Vector(list) => Ok(Types.List([val, ...list])),
+    _ => Err("expected list"),
+  }
+}
+
+let concat = (args, env) => {
+  let mut remaining = args
+  let mut result = []
+  let mut err = None
+
+  while (true) {
+    match (remaining) {
+      [] => break,
+      [Types.List(list), ...rest] => {
+        result = List.append(result, list)
+        remaining = rest
+      },
+      [Types.Vector(list), ...rest] => {
+        result = List.append(result, list)
+        remaining = rest
+      },
+      _ => {
+        err = Some("expected list")
+        break
+      }
+    }
+  }
+
+  match (err) {
+    Some(err) => Err(err),
+    None => Ok(Types.List(result)),
+  }
+}
+
 provide let rec eval = (ast, env) => {
   match (ast) {
     Types.List([]) => Ok(ast),
@@ -360,6 +397,8 @@ provide let make_env: () -> Types.Env = () => {
     ("deref", wrap_one(deref)),
     ("reset!", wrap_two(reset)),
     ("swap!", wrap(swap)),
+    ("cons", wrap_two(cons)),
+    ("concat", wrap(concat)),
     ("eval", wrap_one((val, env) => eval(val, env))),
   ]
 
