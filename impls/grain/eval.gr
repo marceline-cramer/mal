@@ -91,16 +91,23 @@ let wrap_function = (fn) => {
   wrap(cb)
 }
 
-let list = (ast, env) => Ok(Types.List(ast))
-
-let is_list = (val, env) => {
-  let is_list = match (val) {
-    Types.List(_) => true,
-    _ => false,
-  }
-
-  Ok(Types.Bool(is_list))
+let wrap_is = (fn) => {
+  let cb = (val, env) => Ok(Types.Bool(fn(val, env)))
+  wrap_one(cb)
 }
+
+let list = (args, env) => Ok(Types.List(args))
+let vector = (args, env) => Ok(Types.Vector(args))
+
+let is_list = (val, env) => match (val) { Types.List(_) => true, _ => false }
+let is_vector = (val, env) => match (val) { Types.Vector(_) => true, _ => false }
+let is_nil = (val, env) => match (val) { Types.Nil => true, _ => false }
+let is_true = (val, env) => match (val) { Types.Bool(true) => true, _ => false }
+let is_false = (val, env) => match (val) { Types.Bool(false) => true, _ => false }
+let is_symbol = (val, env) => match (val) { Types.Symbol(_) => true, _ => false }
+let is_keyword = (val, env) => match (val) { Types.Keyword(_) => true, _ => false }
+let is_map = (val, env) => match (val) { Types.HashMap(_) => true, _ => false }
+let is_sequential = (val, env) => match (val) { Types.List(_) => true, Types.Vector(_) => true, _ => false }
 
 let is_empty = (list, env) => Ok(Types.Bool(List.length(list) == 0))
 
@@ -585,10 +592,23 @@ provide let make_env: () -> Types.Env = () => {
     ("<=", wrap_op(le)),
     (">", wrap_op(gt)),
     (">=", wrap_op(ge)),
+
     ("list", wrap(list)),
-    ("list?", wrap_one(is_list)),
+    ("vector", wrap(vector)),
+
+    ("list?", wrap_is(is_list)),
+    ("vector?", wrap_is(is_vector)),
+    ("nil?", wrap_is(is_nil)),
+    ("true?", wrap_is(is_true)),
+    ("false?", wrap_is(is_false)),
+    ("symbol?", wrap_is(is_symbol)),
+    ("keyword?", wrap_is(is_keyword)),
+    ("map?", wrap_is(is_map)),
+    ("sequential?", wrap_is(is_sequential)),
+
     ("empty?", wrap_list(is_empty)),
     ("count", wrap_list(count)),
+
     ("pr-str", wrap(pr_str)),
     ("str", wrap(str)),
     ("prn", wrap(prn)),
