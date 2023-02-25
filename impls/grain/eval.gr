@@ -80,6 +80,17 @@ let wrap_str = (fn) => {
   wrap_one(cb)
 }
 
+let wrap_function = (fn) => {
+  let cb = (args, env) => {
+    match (args) {
+      [Types.Function(function), ...args] => fn(function, args, env),
+      _ => Err("must be given a function"),
+    }
+  }
+
+  wrap(cb)
+}
+
 let list = (ast, env) => Ok(Types.List(ast))
 
 let is_list = (val, env) => {
@@ -234,6 +245,38 @@ let concat = (args, env) => {
     Some(err) => Err(err),
     None => Ok(Types.List(result)),
   }
+}
+
+let apply = (function: Types.MalFn, args, env) => {
+  let mut remaining = args
+  let mut args = []
+  let mut result = Err("expected a vector or list as the final argument")
+
+  let finish = (rest) => {
+    let args = List.reverse(args)
+    let args = List.append(args, rest)
+    result = function.cb(args, env)
+  }
+
+  while (true) {
+    match (remaining) {
+      [Types.List(rest)] => {
+        finish(rest)
+        break
+      },
+      [Types.Vector(rest)] => {
+        finish(rest)
+        break
+      },
+      [arg, ...rest] => {
+        args = [arg, ...args]
+        remaining = rest
+      },
+      _ => break,
+    }
+  }
+
+  result
 }
 
 let rec quasiquote = (ast) => {
@@ -524,6 +567,7 @@ provide let make_env: () -> Types.Env = () => {
     ("swap!", wrap(swap)),
     ("cons", wrap_two(cons)),
     ("concat", wrap(concat)),
+    ("apply", wrap_function(apply)),
     ("eval", wrap_one((val, env) => eval(val, env))),
   ]
 
