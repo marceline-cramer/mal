@@ -2,6 +2,7 @@ module Eval
 
 include "./reader"
 include "./types"
+include "immutablemap"
 include "list"
 include "map"
 include "option"
@@ -411,6 +412,17 @@ eval_ast = (ast, env) => {
     },
     Types.Vector(vec) => {
       Result.map((vec) => Types.Vector(vec), eval_list(vec, env))
+    },
+    Types.HashMap(map) => {
+      let keys = ImmutableMap.keys(map)
+      let vals = ImmutableMap.values(map)
+      match (eval_list(vals, env)) {
+        Err(err) => Err(err),
+        Ok(evaluated) => {
+          let entries = List.zip(keys, evaluated)
+          Ok(Types.HashMap(ImmutableMap.fromList(entries)))
+        }
+      }
     },
     ast => Ok(ast),
   }
