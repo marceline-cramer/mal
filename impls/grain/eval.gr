@@ -254,6 +254,10 @@ let rec quasiquote = (ast) => {
 }
 
 provide let rec eval = (ast, env) => {
+  Result.flatMap((ast) => eval_inner(ast, env), macroexpand(ast, env))
+},
+
+eval_inner = (ast, env) => {
   match (ast) {
     Types.List([]) => Ok(ast),
     Types.List([Types.Symbol("quote"), ast]) => Ok(ast),
@@ -345,6 +349,7 @@ provide let rec eval = (ast, env) => {
 
       Result.map(set_is_macro, eval(val, env))
     },
+    Types.List([Types.Symbol("macroexpand"), ast]) => macroexpand(ast, env),
     Types.List([Types.Symbol("let*"), Types.List(bindings), body]) => {
       let inner = Types.make_inner(env)
       match (eval_let_bindings(bindings, inner)) {
@@ -364,6 +369,29 @@ provide let rec eval = (ast, env) => {
       Result.flatMap((list) => call_list(list, env), evaluated)
     },
     ast => eval_ast(ast, env)
+  }
+},
+
+macroexpand = (ast, env) => {
+  let mut ast = ast
+  let mut err = None
+  while (true) {
+    match (ast) {
+      Types.List([Types.Symbol(symbol), ...args]) =>
+        match (Types.get_macro(symbol, env)) {
+          Ok(fn) => match (fn.cb(args, env)) {
+            Ok(new_ast) => ast = new_ast,
+            Err(call_err) => { err = Some(call_err); break }, 
+          },
+          Err(_) => break,
+        },
+      _ => break,
+    }
+  }
+
+  match (err) {
+    Some(err) => Err(err),
+    None => Ok(ast),
   }
 },
 

@@ -4,6 +4,7 @@ include "immutablemap"
 include "list"
 include "map"
 include "option"
+include "result"
 include "string"
 
 provide record Env {
@@ -112,4 +113,15 @@ provide let get = (key, env) => {
 
 provide let make_inner = (env) => {
   { outer: Some(env), data: Map.make() }
+}
+
+provide let get_macro = (key, env) => {
+  let to_macro = (val) => {
+    match (val) {
+      Function(fn) when fn.is_macro => Ok(fn),
+      _ => Err("function is not a macro"),
+    }
+  }
+
+  Result.flatMap(to_macro, get(key, env))
 }
