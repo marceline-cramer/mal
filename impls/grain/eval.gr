@@ -116,6 +116,11 @@ let println = (args, env) => {
   Ok(Types.Nil)
 }
 
+let core_throw = (val, env) => {
+  let msg = Types.pr_str(val, true)
+  Err("error: " ++ msg)
+}
+
 let eq = (args, env) => {
   // would include list_eq as part of the let binding but grain crashes
   let list_eq = (lhs, rhs, eq) => {
@@ -487,6 +492,7 @@ provide let make_env: () -> Types.Env = () => {
     ("str", wrap(str)),
     ("prn", wrap(prn)),
     ("println", wrap(println)),
+    ("throw", wrap_one(core_throw)),
     ("=", wrap(eq)),
     ("read-string", wrap_str(read_string)),
     ("atom", wrap_one(atom)),
