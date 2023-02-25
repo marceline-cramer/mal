@@ -131,6 +131,7 @@ let eq = (args, env) => {
     (Types.Bool(lhs), Types.Bool(rhs)) => lhs == rhs,
     (Types.String(lhs), Types.String(rhs)) => lhs == rhs,
     (Types.Keyword(lhs), Types.Keyword(rhs)) => lhs == rhs,
+    (Types.Symbol(lhs), Types.Symbol(rhs)) => lhs == rhs,
     (Types.Nil, Types.Nil) => true,
     (Types.List(lhs), Types.List(rhs)) => list_eq(lhs, rhs, eq),
     (Types.List(lhs), Types.Vector(rhs)) => list_eq(lhs, rhs, eq),
