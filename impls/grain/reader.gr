@@ -102,11 +102,21 @@ let rec read_list = (reader, term) => {
 },
 
 read_atom = (reader, tok) => {
+  let quoted = (sym, reader) => {
+    next(reader) // progress reader for read_form
+    Result.map((ast) => Types.List([Types.Symbol(sym), ast]), read_form(reader))
+  }
+
   match (tok) {
     "nil" => Ok(Types.Nil),
     "true" => Ok(Types.Bool(true)),
     "false" => Ok(Types.Bool(false)),
     "\"" => Err("unbalanced"), // catch early so that parsing doesn't panic
+    "@" => quoted("deref", reader),
+    "'" => quoted("quote", reader),
+    "`" => quoted("quasiquote", reader),
+    "~" => quoted("unquote", reader),
+    "~@" => quoted("splice-unquote", reader),
     _ => match (Number.parseInt(tok, 10)) {
       Ok(number) => Ok(Types.Number(number)),
       Err(_) => match (String.charAt(0, tok)) {
@@ -120,11 +130,6 @@ read_atom = (reader, tok) => {
             let string = String.replaceAll("\\n", "\n", string)
             Ok(Types.String(String.slice(1, last, tok)))
           }
-        },
-        '@' => {
-          let next = next(reader)
-          let result = Option.toResult("end of input", next)
-          Result.map((sym) => Types.List([Types.Symbol("deref"), Types.Symbol(sym)]), result)
         },
         _ => Ok(Types.Symbol(tok)),  
       }
