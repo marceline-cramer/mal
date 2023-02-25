@@ -212,9 +212,33 @@ let concat = (args, env) => {
   }
 }
 
+let rec quasiquote = (ast) => {
+  match (ast) {
+    Types.List([Types.Symbol("unquote"), ast]) => ast,
+    Types.List(ast) => {
+      let mut result = Types.List([])
+      List.forEach((elt) => {
+        match (elt) {
+          Types.List([Types.Symbol("splice-unquote"), ...rest]) => {
+            result = Types.List([Types.Symbol("concat"), Types.List(rest), result])
+          },
+          _ => {
+            result = Types.List([Types.Symbol("cons"), quasiquote(elt), result])
+          },
+        }
+      }, List.reverse(ast))
+      result
+    },
+    Types.Symbol(_) => Types.List([Types.Symbol("quote"), ast]),
+    _ => ast,
+  }
+}
+
 provide let rec eval = (ast, env) => {
   match (ast) {
     Types.List([]) => Ok(ast),
+    Types.List([Types.Symbol("quote"), ast]) => Ok(ast),
+    Types.List([Types.Symbol("quasiquote"), ast]) => eval(quasiquote(ast), env),
     Types.List([Types.Symbol("do"), ...elems]) => {
       match (eval_list(elems, env)) {
         Err(err) => Err(err),
