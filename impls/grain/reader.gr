@@ -1,5 +1,6 @@
 module Reader
 
+include "immutablemap"
 include "list"
 include "regex"
 include "result"
@@ -101,6 +102,40 @@ let rec read_list = (reader, term) => {
   }
 },
 
+list_to_hash_map = (list) => {
+  let mut items = []
+  let mut remaining = list
+  let mut err = None
+
+  while (true) {
+    match (remaining) {
+      [] => break,
+      [Types.String(key), val, ...tail] => {
+        items = [(key, val), ...items]
+        remaining = tail
+      },
+      [Types.Keyword(key), val, ...tail] => {
+        let key = Types.keyword_prefix ++ key
+        items = [(key, val), ...items]
+        remaining = tail
+      },
+      [_, _, ..._] => {
+        err = Some("expected string or symbol key")
+        break
+      },
+      _ => {
+        err = Some("uneven hash-map entries")
+        break
+      },
+    }
+  }
+
+  match (err) {
+    Some(err) => Err(err),
+    None => Ok(Types.HashMap(ImmutableMap.fromList(items))),
+  }
+},
+
 read_atom = (reader, tok) => {
   let quoted = (sym, reader) => {
     next(reader) // progress reader for read_form
@@ -142,6 +177,7 @@ read_form = (reader) => {
   match (peek(reader)) {
     Some("(") => Result.map((elems) => Types.List(elems), read_list(reader, ")")),
     Some("[") => Result.map((elems) => Types.Vector(elems), read_list(reader, "]")),
+    Some("{") => Result.flatMap((list) => list_to_hash_map(list), read_list(reader, "}")),
     Some(tok) => read_atom(reader, tok),
     None => Err("end of input")
   }

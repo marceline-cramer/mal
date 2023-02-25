@@ -1,5 +1,6 @@
 module Types
 
+include "immutablemap"
 include "list"
 include "map"
 include "option"
@@ -19,8 +20,28 @@ provide enum MalType {
   Number(Number),
   List(List<MalType>),
   Vector(List<MalType>),
+  HashMap(ImmutableMap.ImmutableMap<String, MalType>),
   Atom(Box<MalType>),
   Function((List<MalType>, Env) -> Result<MalType, String>),
+}
+
+provide let keyword_prefix = "\u029e"
+
+provide let marshal_keyword = (str) => {
+  keyword_prefix ++ str
+}
+
+provide let unmarshal_keyword = (str) => {
+  let len = String.length(str)
+  String.slice(1, len, str)
+}
+
+provide let unmarshal_maybe_keyword = (str) => {
+  if (String.startsWith(keyword_prefix, str)) {
+    Keyword(unmarshal_keyword(str))
+  } else {
+    String(str)
+  }
 }
 
 provide let rec pr_str = (val, print_readably) => {
@@ -46,6 +67,19 @@ provide let rec pr_str = (val, print_readably) => {
       let strs = List.map((elem) => pr_str(elem, print_readably), list)
       let joined = List.join(" ", strs)
       "(" ++ joined ++ ")"
+    },
+    HashMap(map) => {
+      let pr_kv = (kv) => {
+        let (key, val) = kv
+        let key = pr_str(unmarshal_maybe_keyword(key), true)
+        let val = pr_str(val, print_readably)
+        key ++ " " ++ val
+      }
+
+      let items = ImmutableMap.toList(map)
+      let strs = List.map(pr_kv, items)
+      let joined = List.join(" ", strs)
+      "{" ++ joined ++ "}"
     },
     Atom(val) => "(atom " ++ pr_str(unbox(val), print_readably) ++ ")",
     Function(_) => "<function>",
