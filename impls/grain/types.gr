@@ -63,3 +63,7 @@ provide let rec find = (key, env) => {
 provide let get = (key, env) => {
   Option.toResult("'" ++ key ++ "' not found.", Map.get(key, env.data))
 }
+
+provide let make_inner = (env) => {
+  { outer: Some(env), data: Map.make() }
+}

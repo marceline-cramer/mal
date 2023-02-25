@@ -232,30 +232,15 @@ provide let rec eval = (ast, env) => {
       Result.map((val) => Types.set(key, val, env), eval(val, env))
     },
     Types.List([Types.Symbol("let*"), Types.List(bindings), body]) => {
-      let inner: Types.Env = { outer: Some(env), data: Map.make() }
-      let mut remaining = bindings
-      let mut err = None
-      while (true) {
-        match (remaining) {
-          [] => break,
-          [Types.Symbol(key), val, ...tail] => {
-            remaining = tail
-            match (eval(val, inner)) {
-              Ok(val) => { let _ = Types.set(key, val, inner) },
-              Err(eval_err) => {
-                err = Some(eval_err)
-                break
-              }
-            }
-          },
-          [_] => {
-            err = Some("uneven let* bindings")
-            break
-          }
-        }
+      let inner = Types.make_inner(env)
+      match (eval_let_bindings(bindings, inner)) {
+        Some(err) => Err(err),
+        None => eval(body, inner),
       }
-
-      match (err) {
+    },
+    Types.List([Types.Symbol("let*"), Types.Vector(bindings), body]) => {
+      let inner = Types.make_inner(env)
+      match (eval_let_bindings(bindings, inner)) {
         Some(err) => Err(err),
         None => eval(body, inner),
       }
@@ -266,6 +251,32 @@ provide let rec eval = (ast, env) => {
     },
     ast => eval_ast(ast, env)
   }
+},
+
+eval_let_bindings = (bindings, env) => {
+  let mut remaining = bindings
+  let mut err = None
+  while (true) {
+    match (remaining) {
+      [] => break,
+      [Types.Symbol(key), val, ...tail] => {
+        remaining = tail
+        match (eval(val, env)) {
+          Ok(val) => { let _ = Types.set(key, val, env) },
+          Err(eval_err) => {
+            err = Some(eval_err)
+            break
+          }
+        }
+      },
+      [_] => {
+        err = Some("uneven let* bindings")
+        break
+      }
+    }
+  }
+
+  err
 },
 
 call_list = (list, env) => {
