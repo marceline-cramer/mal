@@ -11,6 +11,11 @@ provide record Env {
   data: Map.Map<String, MalType>,
 },
 
+provide record MalFn {
+  cb: (List<MalType>, Env) -> Result<MalType, String>,
+  is_macro: Bool,
+},
+
 provide enum MalType {
   Nil,
   Bool(Bool),
@@ -22,7 +27,7 @@ provide enum MalType {
   Vector(List<MalType>),
   HashMap(ImmutableMap.ImmutableMap<String, MalType>),
   Atom(Box<MalType>),
-  Function((List<MalType>, Env) -> Result<MalType, String>),
+  Function(MalFn),
 }
 
 provide let keyword_prefix = "\u029e"

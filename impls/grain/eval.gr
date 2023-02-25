@@ -19,7 +19,7 @@ let le  = (lhs, rhs) => Types.Bool(lhs <= rhs)
 let gt  = (lhs, rhs) => Types.Bool(lhs > rhs)
 let ge  = (lhs, rhs) => Types.Bool(lhs >= rhs)
 
-let wrap = (fn) => Types.Function(fn)
+let wrap = (cb) => Types.Function({ cb, is_macro: false })
 
 let wrap_op = (fn) => {
   let cb = (args, env) => {
@@ -182,7 +182,7 @@ let swap = (args, env) => {
   match (args) {
     [Types.Atom(atom), Types.Function(fn), ...args] => {
       let args = [unbox(atom), ...args]
-      match (fn(args, env)) {
+      match (fn.cb(args, env)) {
         Err(err) => Err(err),
         Ok(val) => {
           atom := val
@@ -326,7 +326,7 @@ provide let rec eval = (ast, env) => {
             eval(body, env)
           }
 
-          Ok(Types.Function(cb))
+          Ok(wrap(cb))
         }
       }
     },
@@ -383,7 +383,7 @@ eval_let_bindings = (bindings, env) => {
 
 call_list = (list, env) => {
   match (list) {
-    [Types.Function(fn), ...args] => fn(args, env),
+    [Types.Function(fn), ...args] => fn.cb(args, env),
     _ => Err("cannot call list"),
   }
 },
