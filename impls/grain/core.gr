@@ -404,3 +404,22 @@ provide let make_env: () -> Types.Env = () => {
 
   { outer: None, data: Map.fromList(data) }
 }
+
+provide let rep = (input, env) => {
+  let output = match (Reader.read_str(input)) {
+    Ok(parsed) => match (Eval.eval(parsed, env)) {
+      Ok(result) => Types.pr_str(result, true),
+      Err(err) => err,
+    },
+    Err(err) => err,
+  }
+
+  print(output)
+}
+
+provide let run = () => {
+  let env = make_env()
+  while (true) {
+    rep(Reader.prompt(), env)
+  }
+}

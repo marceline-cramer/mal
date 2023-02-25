@@ -1,26 +1,3 @@
-module Mal_step4_if_fn_do
-
-include "./eval"
-include "./reader"
-include "./types"
-include "result"
-include "string"
-include "sys/file"
-
-let env = Eval.make_env()
-
-let rep = (input) => {
-  let output = match (Reader.read_str(input)) {
-    Ok(parsed) => match (Eval.eval(parsed, env)) {
-      Ok(result) => Types.pr_str(result, true),
-      Err(err) => err
-    },
-    Err(err) => err
-  }
-
-  print(output)
-}
-
-while(true) {
-  rep(Reader.prompt())
-}
+module Mal_step7_quote
+include "./core"
+Core.run()

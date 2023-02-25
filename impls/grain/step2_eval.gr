@@ -1,24 +1,3 @@
 module Mal_step2_eval
-
-include "./eval"
-include "./reader"
-include "./types"
-include "result"
-include "string"
-include "sys/file"
-
-let rep = (input) => {
-  let output = match (Reader.read_str(input)) {
-    Ok(parsed) => match (Eval.eval(parsed, Eval.make_env())) {
-      Ok(result) => Types.pr_str(result, true),
-      Err(err) => err
-    },
-    Err(err) => err
-  }
-
-  print(output)
-}
-
-while(true) {
-  rep(Reader.prompt())
-}
+include "./core"
+Core.run()
