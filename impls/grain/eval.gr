@@ -94,7 +94,7 @@ let is_empty = (list, env) => Ok(Types.Bool(List.length(list) == 0))
 let count = (list, env) => Ok(Types.Number(List.length(list)))
 
 let prn = (val, env) => {
-  let str = Types.pr_str(val)
+  let str = Types.pr_str(val, true)
   print(str)
   Ok(Types.Nil)
 }

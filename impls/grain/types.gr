@@ -23,26 +23,31 @@ provide enum MalType {
   Function((List<MalType>, Env) -> Result<MalType, String>),
 }
 
-provide let rec pr_str = (val) => {
+provide let rec pr_str = (val, print_readably) => {
   match (val) {
     Nil => "nil",
     Bool(true) => "true",
     Bool(false) => "false",
-    String(str) => "\"" ++ str ++ "\"", // TODO escaping
+    String(str) when print_readably => {
+      let str = String.replaceAll("\"", "\\\"", str)
+      let str = String.replaceAll("\n", "\\n", str)
+      "\"" ++ str ++ "\""
+    },
+    String(str) => str,
     Keyword(str) => str,
     Symbol(sym) => sym,
     Number(num) => toString(num),
     Vector(vector) => {
-      let strs = List.map(pr_str, vector)
+      let strs = List.map((elem) => pr_str(elem, print_readably), vector)
       let joined = List.join(" ", strs)
       "[" ++ joined ++ "]"
     },
     List(list) => {
-      let strs = List.map(pr_str, list)
+      let strs = List.map((elem) => pr_str(elem, print_readably), list)
       let joined = List.join(" ", strs)
       "(" ++ joined ++ ")"
     },
-    Atom(val) => "(atom " ++ pr_str(unbox(val)) ++ ")",
+    Atom(val) => "(atom " ++ pr_str(unbox(val), print_readably) ++ ")",
     Function(_) => "<function>",
   }
 }

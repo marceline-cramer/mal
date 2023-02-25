@@ -12,7 +12,7 @@ let env = Eval.make_env()
 let rep = (input) => {
   let output = match (Reader.read_str(input)) {
     Ok(parsed) => match (Eval.eval(parsed, env)) {
-      Ok(result) => Types.pr_str(result),
+      Ok(result) => Types.pr_str(result, true),
       Err(err) => err
     },
     Err(err) => err

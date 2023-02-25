@@ -10,7 +10,7 @@ let eval = (input) => Ok(input)
 let rep = (input) => {
   let output = match (Reader.read_str(input)) {
     Ok(parsed) => match (eval(parsed)) {
-      Ok(result) => Types.pr_str(result),
+      Ok(result) => Types.pr_str(result, true),
       Err(err) => err
     },
     Err(err) => err
