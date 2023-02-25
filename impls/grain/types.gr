@@ -102,7 +102,7 @@ provide let rec find = (key, env) => {
     Some(val) => Ok(val),
     None => match (env.outer) {
       Some(outer) => find(key, outer),
-      None => Err("'" ++ key ++ "' not found."),
+      None => Err("'" ++ key ++ "' not found"),
     }
   }
 }

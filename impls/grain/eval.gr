@@ -369,6 +369,28 @@ eval_inner = (ast, env) => {
         None => eval(body, inner),
       }
     },
+    Types.List([Types.Symbol("try*"), try_body, Types.List([Types.Symbol("catch*"), Types.Symbol(err_bind), catch_body])]) => {
+      match (eval(try_body, env)) {
+        Ok(val) => Ok(val),
+        Err(err) when String.startsWith("error: ", err) => {
+          let last = String.length(err)
+          let err = String.slice(7, last, err)
+          match (Reader.read_str(err)) {
+            Ok(err) => {
+              let env = Types.make_inner(env)
+              Types.set(err_bind, err, env)
+              eval(catch_body, env)
+            },
+            Err(err) => Err(err),
+          }
+        },
+        Err(err) => {
+          let env = Types.make_inner(env)
+          Types.set(err_bind, Types.String(err), env)
+          eval(catch_body, env)
+        },
+      }
+    },
     Types.List(list) => {
       let evaluated = eval_list(list, env)
       Result.flatMap((list) => call_list(list, env), evaluated)
