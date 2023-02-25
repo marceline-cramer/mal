@@ -121,6 +121,11 @@ read_atom = (reader, tok) => {
             Ok(Types.String(String.slice(1, last, tok)))
           }
         },
+        '@' => {
+          let next = next(reader)
+          let result = Option.toResult("end of input", next)
+          Result.map((sym) => Types.List([Types.Symbol("deref"), Types.Symbol(sym)]), result)
+        },
         _ => Ok(Types.Symbol(tok)),  
       }
     }
