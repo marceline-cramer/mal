@@ -1,0 +1,406 @@
+module Core
+
+include "./eval"
+include "./reader"
+include "./types"
+include "immutablemap"
+include "list"
+include "map"
+include "string"
+include "sys/file"
+
+let wrap = (cb) => Types.Function({ cb, is_macro: false })
+
+let wrap_op = (fn) => {
+  let cb = (args, env) => {
+    match (args) {
+      [Types.Number(lhs), Types.Number(rhs)] => {
+        Ok(fn(lhs, rhs))
+      },
+      _ => Err("expected two numbers"),
+    }
+  }
+
+  wrap(cb)
+}
+
+let wrap_one = (fn) => {
+  let cb = (ast, env) => {
+    match (ast) {
+      [val] => fn(val, env),
+      _ => Err("expected one argument"),
+    }
+  }
+
+  wrap(cb)
+}
+
+let wrap_two = (fn) => {
+  let cb = (args, env) => {
+    match (args) {
+      [lhs, rhs] => fn(lhs, rhs, env),
+      _ => Err("expected two arguments"),
+    }
+  }
+
+  wrap(cb)
+}
+
+let wrap_list = (fn) => {
+  let cb = (val, env) => {
+    match (val) {
+      Types.List(list) => fn(list, env),
+      Types.Vector(list) => fn(list, env),
+      Types.Nil => fn([], env),
+      _ => Err("must be given a list"),
+    }
+  }
+
+  wrap_one(cb)
+}
+
+let wrap_str = (fn) => {
+  let cb = (val, env) => {
+    match (val) {
+      Types.String(str) => fn(str, env),
+      _ => Err("must be given a string"),
+    }
+  }
+
+  wrap_one(cb)
+}
+
+let wrap_function = (fn) => {
+  let cb = (args, env) => {
+    match (args) {
+      [Types.Function(function), ...args] => fn(function, args, env),
+      _ => Err("must be given a function"),
+    }
+  }
+
+  wrap(cb)
+}
+
+let wrap_is = (fn) => {
+  let cb = (val, env) => Ok(Types.Bool(fn(val, env)))
+  wrap_one(cb)
+}
+
+// numerical operators
+let add = (lhs, rhs) => Types.Number(lhs + rhs)
+let sub = (lhs, rhs) => Types.Number(lhs - rhs)
+let mul = (lhs, rhs) => Types.Number(lhs * rhs)
+let div = (lhs, rhs) => Types.Number(lhs / rhs)
+let lt  = (lhs, rhs) => Types.Bool(lhs < rhs)
+let le  = (lhs, rhs) => Types.Bool(lhs <= rhs)
+let gt  = (lhs, rhs) => Types.Bool(lhs > rhs)
+let ge  = (lhs, rhs) => Types.Bool(lhs >= rhs)
+
+// deep equality test
+let eq = (args, env) => {
+  // would include list_eq as part of the let binding but grain crashes
+  let list_eq = (lhs, rhs, eq) => {
+    if (List.length(lhs) != List.length(rhs)) {
+      false
+    } else {
+      List.every(eq, List.zip(lhs, rhs))
+    }
+  }
+
+  let rec eq = (args) => match (args) {
+    (Types.Number(lhs), Types.Number(rhs)) => lhs == rhs,
+    (Types.Bool(lhs), Types.Bool(rhs)) => lhs == rhs,
+    (Types.String(lhs), Types.String(rhs)) => lhs == rhs,
+    (Types.Keyword(lhs), Types.Keyword(rhs)) => lhs == rhs,
+    (Types.Symbol(lhs), Types.Symbol(rhs)) => lhs == rhs,
+    (Types.Nil, Types.Nil) => true,
+    (Types.List(lhs), Types.List(rhs)) => list_eq(lhs, rhs, eq),
+    (Types.List(lhs), Types.Vector(rhs)) => list_eq(lhs, rhs, eq),
+    (Types.Vector(lhs), Types.List(rhs)) => list_eq(lhs, rhs, eq),
+    (Types.Vector(lhs), Types.Vector(rhs)) => list_eq(lhs, rhs, eq),
+    _ => false,
+  }
+
+  match (args) {
+    [lhs, rhs] => Ok(Types.Bool(eq((lhs, rhs)))),
+    _ => Err("invalid comparison")
+  }
+}
+
+// constructors and conversion
+let list = (args, env) => Ok(Types.List(args))
+let vector = (args, env) => Ok(Types.Vector(args))
+
+let symbol = (val, env) => {
+  match (val) {
+    Types.String(symbol) => Ok(Types.Symbol(symbol)),
+    _ => Err("expected string"),
+  }
+}
+
+let keyword = (val, env) => {
+  match (val) {
+    Types.String(keyword) => Ok(Types.Keyword(keyword)),
+    _ => Err("expected string"),
+  }
+}
+
+// type tests
+let is_list = (val, env) => match (val) { Types.List(_) => true, _ => false }
+let is_vector = (val, env) => match (val) { Types.Vector(_) => true, _ => false }
+let is_nil = (val, env) => match (val) { Types.Nil => true, _ => false }
+let is_true = (val, env) => match (val) { Types.Bool(true) => true, _ => false }
+let is_false = (val, env) => match (val) { Types.Bool(false) => true, _ => false }
+let is_symbol = (val, env) => match (val) { Types.Symbol(_) => true, _ => false }
+let is_keyword = (val, env) => match (val) { Types.Keyword(_) => true, _ => false }
+let is_map = (val, env) => match (val) { Types.HashMap(_) => true, _ => false }
+let is_sequential = (val, env) => match (val) { Types.List(_) => true, Types.Vector(_) => true, _ => false }
+
+// list and vector operators
+let is_empty = (list, env) => Ok(Types.Bool(List.length(list) == 0))
+let count = (list, env) => Ok(Types.Number(List.length(list)))
+
+let cons = (val, list, env) => {
+  match (list) {
+    Types.List(list) => Ok(Types.List([val, ...list])),
+    Types.Vector(list) => Ok(Types.List([val, ...list])),
+    _ => Err("expected list"),
+  }
+}
+
+let concat = (args, env) => {
+  let mut remaining = args
+  let mut result = []
+  let mut err = None
+
+  while (true) {
+    match (remaining) {
+      [] => break,
+      [Types.List(list), ...rest] => {
+        result = List.append(result, list)
+        remaining = rest
+      },
+      [Types.Vector(list), ...rest] => {
+        result = List.append(result, list)
+        remaining = rest
+      },
+      _ => {
+        err = Some("expected list")
+        break
+      }
+    }
+  }
+
+  match (err) {
+    Some(err) => Err(err),
+    None => Ok(Types.List(result)),
+  }
+}
+
+// string manipulation
+let pr_args = (args, print_readably, joiner) => {
+  let strs = List.map((arg) => Types.pr_str(arg, print_readably), args)
+  List.join(joiner, strs)
+}
+
+let puts = (str) => File.fdWrite(File.stdout, String.encode(str, String.UTF8))
+let pr_str = (args, env) => Ok(Types.String(pr_args(args, true, " ")))
+let str = (args, env) => Ok(Types.String(pr_args(args, false, "")))
+
+let prn = (args, env) => {
+  puts(pr_args(args, true, " ") ++ "\n")
+  Ok(Types.Nil)
+}
+
+let println = (args, env) => {
+  puts(pr_args(args, false, " ") ++ "\n")
+  Ok(Types.Nil)
+}
+
+let read_string = (str, env) => {
+  Reader.read_str(str)
+}
+
+// error handling
+let core_throw = (val, env) => {
+  let msg = Types.pr_str(val, true)
+  Err("error: " ++ msg)
+}
+
+// atom manipulation
+let atom = (val, env) => Ok(Types.Atom(box(val)))
+
+let is_atom = (val, env) => {
+  let val = match (val) {
+    Types.Atom(_) => true,
+    _ => false,
+  }
+
+  Ok(Types.Bool(val))
+}
+
+let deref = (val, env) => {
+  match (val) {
+    Types.Atom(val) => Ok(unbox(val)),
+    _ => Err("deref expects an atom"),
+  }
+}
+
+let reset = (atom, val, env) => {
+  match (atom) {
+    Types.Atom(atom) => {
+      atom := val
+      Ok(val)
+    },
+    _ => Err("expected atom")
+  }
+}
+
+let swap = (args, env) => {
+  match (args) {
+    [Types.Atom(atom), Types.Function(fn), ...args] => {
+      let args = [unbox(atom), ...args]
+      match (fn.cb(args, env)) {
+        Err(err) => Err(err),
+        Ok(val) => {
+          atom := val
+          Ok(val)
+        },
+      }
+    },
+    _ => Err("expected atom, function, and optional arguments"),
+  }
+}
+
+// functional language things
+let apply = (function: Types.MalFn, args, env) => {
+  let mut remaining = args
+  let mut args = []
+  let mut result = Err("expected a vector or list as the final argument")
+
+  let finish = (rest) => {
+    let args = List.reverse(args)
+    let args = List.append(args, rest)
+    result = function.cb(args, env)
+  }
+
+  while (true) {
+    match (remaining) {
+      [Types.List(rest)] => {
+        finish(rest)
+        break
+      },
+      [Types.Vector(rest)] => {
+        finish(rest)
+        break
+      },
+      [arg, ...rest] => {
+        args = [arg, ...args]
+        remaining = rest
+      },
+      _ => break,
+    }
+  }
+
+  result
+}
+
+let map = (args, env) => {
+  let map = (fn: Types.MalFn, list, env) => {
+    let mut err = None
+    let mut remaining = list
+    let mut results = []
+    while (true) {
+      match (remaining) {
+        [elem, ...rest] => {
+          remaining = rest
+          match (fn.cb([elem], env)) {
+            Err(call_err) => {
+              err = Some(call_err)
+              break
+            },
+            Ok(elem) => {
+              results = [elem, ...results]
+            },
+          }
+        },
+        [] => break,
+      }
+    }
+
+    match (err) {
+      Some(err) => Err(err),
+      None => Ok(Types.List(List.reverse(results))),
+    }
+  }
+
+  match (args) {
+    [Types.Function(fn), Types.List(list)] => map(fn, list, env),
+    [Types.Function(fn), Types.Vector(list)] => map(fn, list, env),
+    _ => Err("expected a function then a list or vector"),
+  }
+}
+
+provide let make_env: () -> Types.Env = () => {
+  let data = [
+    // numerical operators
+    ("+", wrap_op(add)),
+    ("-", wrap_op(sub)),
+    ("*", wrap_op(mul)),
+    ("/", wrap_op(div)),
+    ("<", wrap_op(lt)),
+    ("<=", wrap_op(le)),
+    (">", wrap_op(gt)),
+    (">=", wrap_op(ge)),
+
+    // deep equality test
+    ("=", wrap(eq)),
+
+    // constructors and conversion
+    ("list", wrap(list)),
+    ("vector", wrap(vector)),
+    ("symbol", wrap_one(symbol)),
+    ("keyword", wrap_one(keyword)),
+
+    // type tests
+    ("list?", wrap_is(is_list)),
+    ("vector?", wrap_is(is_vector)),
+    ("nil?", wrap_is(is_nil)),
+    ("true?", wrap_is(is_true)),
+    ("false?", wrap_is(is_false)),
+    ("symbol?", wrap_is(is_symbol)),
+    ("keyword?", wrap_is(is_keyword)),
+    ("map?", wrap_is(is_map)),
+    ("sequential?", wrap_is(is_sequential)),
+
+    // list and vector operators
+    ("empty?", wrap_list(is_empty)),
+    ("count", wrap_list(count)),
+    ("cons", wrap_two(cons)),
+    ("concat", wrap(concat)),
+
+    // string manipulation
+    ("pr-str", wrap(pr_str)),
+    ("str", wrap(str)),
+    ("prn", wrap(prn)),
+    ("println", wrap(println)),
+    ("read-string", wrap_str(read_string)),
+
+    // error handling
+    ("throw", wrap_one(core_throw)),
+
+    // atom manipulation
+    ("atom", wrap_one(atom)),
+    ("atom?", wrap_one(is_atom)),
+    ("deref", wrap_one(deref)),
+    ("reset!", wrap_two(reset)),
+    ("swap!", wrap(swap)),
+
+    // functional language things
+    ("apply", wrap_function(apply)),
+    ("map", wrap(map)),
+    ("eval", wrap_one((val, env) => Eval.eval(val, env))),
+  ]
+
+  { outer: None, data: Map.fromList(data) }
+}
