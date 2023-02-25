@@ -219,8 +219,8 @@ let rec quasiquote = (ast) => {
       let mut result = Types.List([])
       List.forEach((elt) => {
         match (elt) {
-          Types.List([Types.Symbol("splice-unquote"), ...rest]) => {
-            result = Types.List([Types.Symbol("concat"), Types.List(rest), result])
+          Types.List([Types.Symbol("splice-unquote"), rest]) => {
+            result = Types.List([Types.Symbol("concat"), rest, result])
           },
           _ => {
             result = Types.List([Types.Symbol("cons"), quasiquote(elt), result])
