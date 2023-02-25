@@ -99,6 +99,20 @@ let wrap_is = (fn) => {
 let list = (args, env) => Ok(Types.List(args))
 let vector = (args, env) => Ok(Types.Vector(args))
 
+let symbol = (val, env) => {
+  match (val) {
+    Types.String(symbol) => Ok(Types.Symbol(symbol)),
+    _ => Err("expected string"),
+  }
+}
+
+let keyword = (val, env) => {
+  match (val) {
+    Types.String(keyword) => Ok(Types.Keyword(keyword)),
+    _ => Err("expected string"),
+  }
+}
+
 let is_list = (val, env) => match (val) { Types.List(_) => true, _ => false }
 let is_vector = (val, env) => match (val) { Types.Vector(_) => true, _ => false }
 let is_nil = (val, env) => match (val) { Types.Nil => true, _ => false }
@@ -595,6 +609,8 @@ provide let make_env: () -> Types.Env = () => {
 
     ("list", wrap(list)),
     ("vector", wrap(vector)),
+    ("symbol", wrap_one(symbol)),
+    ("keyword", wrap_one(keyword)),
 
     ("list?", wrap_is(is_list)),
     ("vector?", wrap_is(is_vector)),
