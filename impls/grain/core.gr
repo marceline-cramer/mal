@@ -129,7 +129,7 @@ let eq = (args, env) => {
 
 // constructors and conversion
 let list = (args, env) => Ok(Types.List(args))
-let vector = (args, env) => Ok(Types.Vector(args))
+let vec = (args, env) => Ok(Types.Vector(args))
 
 let symbol = (val, env) => {
   match (val) {
@@ -358,7 +358,7 @@ provide let make_env: () -> Types.Env = () => {
 
     // constructors and conversion
     ("list", wrap(list)),
-    ("vector", wrap(vector)),
+    ("vec", wrap(vec)),
     ("symbol", wrap_one(symbol)),
     ("keyword", wrap_one(keyword)),
 
