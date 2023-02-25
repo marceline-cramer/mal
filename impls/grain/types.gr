@@ -15,6 +15,7 @@ provide enum MalType {
   Bool(Bool),
   String(String),
   Symbol(String),
+  Keyword(String),
   Number(Number),
   List(List<MalType>),
   Vector(List<MalType>),
@@ -28,6 +29,7 @@ provide let rec pr_str = (val) => {
     Bool(true) => "true",
     Bool(false) => "false",
     String(str) => "\"" ++ str ++ "\"", // TODO escaping
+    Keyword(str) => str,
     Symbol(sym) => sym,
     Number(num) => toString(num),
     Vector(vector) => {

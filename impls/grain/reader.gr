@@ -131,6 +131,7 @@ read_atom = (reader, tok) => {
             Ok(Types.String(String.slice(1, last, tok)))
           }
         },
+        ':' => Ok(Types.Keyword(tok)),
         _ => Ok(Types.Symbol(tok)),  
       }
     }
