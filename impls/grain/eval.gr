@@ -279,6 +279,42 @@ let apply = (function: Types.MalFn, args, env) => {
   result
 }
 
+let map = (args, env) => {
+  let map = (fn: Types.MalFn, list, env) => {
+    let mut err = None
+    let mut remaining = list
+    let mut results = []
+    while (true) {
+      match (remaining) {
+        [elem, ...rest] => {
+          remaining = rest
+          match (fn.cb([elem], env)) {
+            Err(call_err) => {
+              err = Some(call_err)
+              break
+            },
+            Ok(elem) => {
+              results = [elem, ...results]
+            },
+          }
+        },
+        [] => break,
+      }
+    }
+
+    match (err) {
+      Some(err) => Err(err),
+      None => Ok(Types.List(List.reverse(results))),
+    }
+  }
+
+  match (args) {
+    [Types.Function(fn), Types.List(list)] => map(fn, list, env),
+    [Types.Function(fn), Types.Vector(list)] => map(fn, list, env),
+    _ => Err("expected a function then a list or vector"),
+  }
+}
+
 let rec quasiquote = (ast) => {
   match (ast) {
     Types.List([Types.Symbol("unquote"), ast]) => ast,
@@ -568,6 +604,7 @@ provide let make_env: () -> Types.Env = () => {
     ("cons", wrap_two(cons)),
     ("concat", wrap(concat)),
     ("apply", wrap_function(apply)),
+    ("map", wrap(map)),
     ("eval", wrap_one((val, env) => eval(val, env))),
   ]
 
