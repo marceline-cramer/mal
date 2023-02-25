@@ -206,13 +206,18 @@ provide let rec eval = (ast, env) => {
       }
     },
     Types.List([Types.Symbol("fn*"), Types.List(binds), body]) => {
+      let mut rest_binding = None
       let rec to_symbols = (list) => {
         match (list) {
           [] => Ok([]),
+          [Types.Symbol("&"), Types.Symbol(rest)] => {
+            rest_binding = Some(rest)
+            Ok([])
+          },
           [Types.Symbol(symbol), ...rest] => {
             Result.map((rest) => [symbol, ...rest], to_symbols(rest))
           },
-          _ => Err("expected symbol"),
+          _ => Err("expected symbol or & and symbol"),
         }
       }
 
@@ -226,6 +231,17 @@ provide let rec eval = (ast, env) => {
               let (arg, bind) = arg
               let _ = Types.set(arg, bind, env)
             }, binds)
+
+            match (rest_binding) {
+              None => void,
+              Some(rest_binding) => {
+                let split_idx = List.length(binds)
+                let (_binds, rest) = List.part(split_idx, args)
+                let rest = Types.List(rest)
+                Types.set(rest_binding, rest, env)
+                void
+              }
+            }
 
             eval(body, env)
           }
