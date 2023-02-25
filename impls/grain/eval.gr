@@ -6,6 +6,7 @@ include "list"
 include "map"
 include "option"
 include "result"
+include "string"
 include "sys/file"
 
 let add = (lhs, rhs) => Types.Number(lhs + rhs)
@@ -93,9 +94,24 @@ let is_empty = (list, env) => Ok(Types.Bool(List.length(list) == 0))
 
 let count = (list, env) => Ok(Types.Number(List.length(list)))
 
-let prn = (val, env) => {
-  let str = Types.pr_str(val, true)
-  print(str)
+let pr_args = (args, print_readably, joiner) => {
+  let strs = List.map((arg) => Types.pr_str(arg, print_readably), args)
+  List.join(joiner, strs)
+}
+
+let puts = (str) => File.fdWrite(File.stdout, String.encode(str, String.UTF8))
+
+let pr_str = (args, env) => Ok(Types.String(pr_args(args, true, " ")))
+
+let str = (args, env) => Ok(Types.String(pr_args(args, false, "")))
+
+let prn = (args, env) => {
+  puts(pr_args(args, true, " ") ++ "\n")
+  Ok(Types.Nil)
+}
+
+let println = (args, env) => {
+  puts(pr_args(args, false, " ") ++ "\n")
   Ok(Types.Nil)
 }
 
@@ -414,7 +430,10 @@ provide let make_env: () -> Types.Env = () => {
     ("list?", wrap_one(is_list)),
     ("empty?", wrap_list(is_empty)),
     ("count", wrap_list(count)),
-    ("prn", wrap_one(prn)),
+    ("pr-str", wrap(pr_str)),
+    ("str", wrap(str)),
+    ("prn", wrap(prn)),
+    ("println", wrap(println)),
     ("=", wrap(eq)),
     ("read-string", wrap_str(read_string)),
     ("atom", wrap_one(atom)),

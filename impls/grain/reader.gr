@@ -128,7 +128,7 @@ read_atom = (reader, tok) => {
             let string = String.slice(1, last, tok)
             let string = String.replaceAll("\\\"", "\"", string)
             let string = String.replaceAll("\\n", "\n", string)
-            Ok(Types.String(String.slice(1, last, tok)))
+            Ok(Types.String(string))
           }
         },
         ':' => Ok(Types.Keyword(tok)),
