@@ -100,18 +100,24 @@ let prn = (val, env) => {
 }
 
 let eq = (args, env) => {
+  // would include list_eq as part of the let binding but grain crashes
+  let list_eq = (lhs, rhs, eq) => {
+    if (List.length(lhs) != List.length(rhs)) {
+      false
+    } else {
+      List.every(eq, List.zip(lhs, rhs))
+    }
+  }
+
   let rec eq = (args) => match (args) {
     (Types.Number(lhs), Types.Number(rhs)) => lhs == rhs,
     (Types.Bool(lhs), Types.Bool(rhs)) => lhs == rhs,
     (Types.String(lhs), Types.String(rhs)) => lhs == rhs,
     (Types.Nil, Types.Nil) => true,
-    (Types.List(lhs), Types.List(rhs)) => {
-      if (List.length(lhs) != List.length(rhs)) {
-        false
-      } else {
-        List.every(eq, List.zip(lhs, rhs))
-      }
-    },
+    (Types.List(lhs), Types.List(rhs)) => list_eq(lhs, rhs, eq),
+    (Types.List(lhs), Types.Vector(rhs)) => list_eq(lhs, rhs, eq),
+    (Types.Vector(lhs), Types.List(rhs)) => list_eq(lhs, rhs, eq),
+    (Types.Vector(lhs), Types.Vector(rhs)) => list_eq(lhs, rhs, eq),
     _ => false,
   }
 
