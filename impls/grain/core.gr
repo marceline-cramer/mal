@@ -299,7 +299,7 @@ let does_contain = (key, map, env) => {
 
 let keys = (map, args, env) => {
   let keys = ImmutableMap.keys(map)
-  let keys = List.map((key) => Types.String(key), keys)
+  let keys = List.map(Types.unmarshal_maybe_keyword, keys)
   Ok(Types.List(keys))
 }
 
