@@ -161,6 +161,35 @@ let is_sequential = (val, env) => match (val) { Types.List(_) => true, Types.Vec
 let is_empty = (list, env) => Ok(Types.Bool(List.length(list) == 0))
 let count = (list, env) => Ok(Types.Number(List.length(list)))
 
+let nth = (args, env) => {
+  let nth = (list, idx) => {
+    match (List.nth(idx, list)) {
+      Some(val) => Ok(val),
+      None => Err("out of bounds"),
+    }
+  }
+
+  match (args) {
+    [Types.List(list), Types.Number(idx)] => nth(list, idx),
+    [Types.Vector(list), Types.Number(idx)] => nth(list, idx),
+    _ => Err("expected list or vector and number"),
+  }
+}
+
+let first = (list, env) => {
+  match (list) {
+    [] => Ok(Types.Nil),
+    [first, ..._] => Ok(first),
+  }
+}
+
+let rest = (list, env) => {
+  match (list) {
+    [] => Ok(Types.List([])),
+    [_, ...rest] => Ok(Types.List(rest)),
+  }
+}
+
 let cons = (val, list, env) => {
   match (list) {
     Types.List(list) => Ok(Types.List([val, ...list])),
@@ -378,6 +407,9 @@ provide let make_env: () -> Types.Env = () => {
     // list and vector operators
     ("empty?", wrap_list(is_empty)),
     ("count", wrap_list(count)),
+    ("nth", wrap(nth)),
+    ("first", wrap_list(first)),
+    ("rest", wrap_list(rest)),
     ("cons", wrap_two(cons)),
     ("concat", wrap(concat)),
 
