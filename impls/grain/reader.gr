@@ -202,8 +202,8 @@ provide let read_str = (source) => {
   Result.flatMap(read_tokens, tokenize(source))
 }
 
-provide let prompt = () => {
-  let prompt = String.encode("user> ", String.UTF8)
+provide let prompt = (prompt) => {
+  let prompt = String.encode(prompt, String.UTF8)
   File.fdWrite(File.stdout, prompt)
   let result = File.fdRead(File.stdin, 1024)
   let (line, _len) = Result.unwrap(result)

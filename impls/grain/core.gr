@@ -440,6 +440,15 @@ let map = (args, env) => {
   }
 }
 
+let eval = (val, env) => Eval.eval(val, env)
+
+let readline = (val, env) => {
+  match (val) {
+    Types.String(prompt) => Ok(Types.String(Reader.prompt(prompt))),
+    _ => Err("expected a string"),
+  }
+}
+
 provide let make_env: () -> Types.Env = () => {
   let data = [
     ("*host-language*", Types.String("grain")),
@@ -513,7 +522,8 @@ provide let make_env: () -> Types.Env = () => {
     // functional language things
     ("apply", wrap_function(apply)),
     ("map", wrap(map)),
-    ("eval", wrap_one((val, env) => Eval.eval(val, env))),
+    ("eval", wrap_one(eval)),
+    ("readline", wrap_one(readline)),
   ]
 
   { outer: None, data: Map.fromList(data) }
@@ -533,10 +543,10 @@ provide let rep = (input, env) => {
 
 provide let run = () => {
   let env = make_env()
-  rep("(println (str \"Mal \" *host-language* \"]\"))", env)
+  rep("(println (str \"Mal [\" *host-language* \"]\"))", env)
   rep("(def! not (fn* (a) (if a false true)))", env)
   rep("(defmacro! cond (fn* (& xs) (if (> (count xs) 0) (list 'if (first xs) (if (> (count xs) 1) (nth xs 1) (throw \"odd number of forms to cond\")) (cons 'cond (rest (rest xs)))))))", env)
   while (true) {
-    rep(Reader.prompt(), env)
+    rep(Reader.prompt("user> "), env)
   }
 }
