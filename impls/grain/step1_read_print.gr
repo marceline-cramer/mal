@@ -20,5 +20,5 @@ let rep = (input) => {
 }
 
 while(true) {
-  rep(Reader.prompt())
+  rep(Reader.prompt("user> "))
 }
