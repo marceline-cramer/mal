@@ -453,6 +453,7 @@ provide let rep = (input, env) => {
 
 provide let run = () => {
   let env = make_env()
+  rep("(def! not (fn* (a) (if a false true)))", env)
   while (true) {
     rep(Reader.prompt(), env)
   }
