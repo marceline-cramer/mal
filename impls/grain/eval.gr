@@ -68,51 +68,8 @@ eval_inner = (ast, env) => {
         Ok(_) => eval(then_ast, env),
       }
     },
-    Types.List([Types.Symbol("fn*"), Types.List(binds), body]) => {
-      let mut rest_binding = None
-      let rec to_symbols = (list) => {
-        match (list) {
-          [] => Ok([]),
-          [Types.Symbol("&"), Types.Symbol(rest)] => {
-            rest_binding = Some(rest)
-            Ok([])
-          },
-          [Types.Symbol(symbol), ...rest] => {
-            Result.map((rest) => [symbol, ...rest], to_symbols(rest))
-          },
-          _ => Err("expected symbol or & and symbol"),
-        }
-      }
-
-      match (to_symbols(binds)) {
-        Err(err) => Err(err),
-        Ok(binds) => {
-          let cb = (args, env) => {
-            let env: Types.Env = { outer: Some(env), data: Map.make() }
-            let binds = List.zip(binds, args)
-            List.forEach((arg) => {
-              let (arg, bind) = arg
-              let _ = Types.set(arg, bind, env)
-            }, binds)
-
-            match (rest_binding) {
-              None => void,
-              Some(rest_binding) => {
-                let split_idx = List.length(binds)
-                let (_binds, rest) = List.part(split_idx, args)
-                let rest = Types.List(rest)
-                Types.set(rest_binding, rest, env)
-                void
-              }
-            }
-
-            eval(body, env)
-          }
-
-          Ok(Types.Function({ cb, is_macro: false }))
-        }
-      }
-    },
+    Types.List([Types.Symbol("fn*"), Types.List(binds), body]) => eval_fn(binds, body, env),
+    Types.List([Types.Symbol("fn*"), Types.Vector(binds), body]) => eval_fn(binds, body, env),
     Types.List([Types.Symbol("def!"), Types.Symbol(key), val]) => {
       Result.map((val) => Types.set(key, val, env), eval(val, env))
     },
@@ -226,6 +183,52 @@ call_list = (list, env) => {
   match (list) {
     [Types.Function(fn), ...args] => fn.cb(args, env),
     _ => Err("cannot call list"),
+  }
+},
+
+eval_fn = (binds, body, env) => {
+  let mut rest_binding = None
+  let rec to_symbols = (list) => {
+    match (list) {
+      [] => Ok([]),
+      [Types.Symbol("&"), Types.Symbol(rest)] => {
+        rest_binding = Some(rest)
+        Ok([])
+      },
+      [Types.Symbol(symbol), ...rest] => {
+        Result.map((rest) => [symbol, ...rest], to_symbols(rest))
+      },
+      _ => Err("expected symbol or & and symbol"),
+    }
+  }
+
+  match (to_symbols(binds)) {
+    Err(err) => Err(err),
+    Ok(binds) => {
+      let cb = (args, env) => {
+        let env: Types.Env = { outer: Some(env), data: Map.make() }
+        let binds = List.zip(binds, args)
+        List.forEach((arg) => {
+          let (arg, bind) = arg
+          let _ = Types.set(arg, bind, env)
+        }, binds)
+
+        match (rest_binding) {
+          None => void,
+          Some(rest_binding) => {
+            let split_idx = List.length(binds)
+            let (_binds, rest) = List.part(split_idx, args)
+            let rest = Types.List(rest)
+            Types.set(rest_binding, rest, env)
+            void
+          }
+        }
+
+        eval(body, env)
+      }
+
+      Ok(Types.Function({ cb, is_macro: false }))
+    }
   }
 },
 
