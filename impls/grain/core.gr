@@ -461,6 +461,25 @@ let readline = (val, env) => {
   }
 }
 
+let slurp = (path, env) => {
+  let dirFd = File.pwdfd
+  let dirFlags = [File.SymlinkFollow]
+  let openFlags = []
+  let rights = [File.FdRead]
+  let rightsInheriting = [File.FdRead]
+  let flags = []
+  let fd = File.pathOpen(dirFd, dirFlags, path, openFlags, rights, rightsInheriting, flags)
+  match (fd) {
+    Err(err) =>Err("failed to open file"),
+    Ok(fd) => {
+      match (File.fdRead(fd, 1000000)) {
+        Err(err) => Err("failed to read file"),
+        Ok((data, _count)) => Ok(Types.String(String.decode(data, String.UTF8)))
+      }
+    }
+  }
+}
+
 provide let make_env: () -> Types.Env = () => {
   let data = [
     ("*host-language*", Types.String("grain")),
@@ -541,6 +560,7 @@ provide let make_env: () -> Types.Env = () => {
     ("map", wrap(map)),
     ("eval", wrap_one(eval)),
     ("readline", wrap_one(readline)),
+    ("slurp", wrap_str(slurp)),
   ]
 
   { outer: None, data: Map.fromList(data) }
