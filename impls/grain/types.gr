@@ -65,7 +65,7 @@ provide let rec pr_str = (val, print_readably) => {
       "\"" ++ str ++ "\""
     },
     String(str) => str,
-    Keyword(str) => str,
+    Keyword(str) => ":" ++ str,
     Symbol(sym) => sym,
     Number(num) => toString(num),
     Vector(vector) => {

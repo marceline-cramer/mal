@@ -167,7 +167,7 @@ read_atom = (reader, tok) => {
     _ => match (Number.parseInt(tok, 10)) {
       Ok(number) => Ok(Types.Number(number)),
       Err(_) => match (String.charAt(0, tok)) {
-        ':' => Ok(Types.Keyword(tok)),
+        ':' => Ok(Types.Keyword(String.slice(1, String.length(tok), tok))),
         _ => Ok(Types.Symbol(tok)),  
       }
     }
