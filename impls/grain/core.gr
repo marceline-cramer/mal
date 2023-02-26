@@ -442,6 +442,8 @@ let map = (args, env) => {
 
 provide let make_env: () -> Types.Env = () => {
   let data = [
+    ("*host-language*", Types.String("grain")),
+
     // numerical operators
     ("+", wrap_op(add)),
     ("-", wrap_op(sub)),
@@ -531,6 +533,7 @@ provide let rep = (input, env) => {
 
 provide let run = () => {
   let env = make_env()
+  rep("(println (str \"Mal \" *host-language* \"]\"))", env)
   rep("(def! not (fn* (a) (if a false true)))", env)
   rep("(defmacro! cond (fn* (& xs) (if (> (count xs) 0) (list 'if (first xs) (if (> (count xs) 1) (nth xs 1) (throw \"odd number of forms to cond\")) (cons 'cond (rest (rest xs)))))))", env)
   while (true) {
