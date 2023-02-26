@@ -1,0 +1,3 @@
+module Mal_step9_try
+include "./core"
+Core.run()
