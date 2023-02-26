@@ -28,6 +28,7 @@ let rec quasiquote = (ast) => {
       result
     },
     Types.Symbol(_) => Types.List([Types.Symbol("quote"), ast]),
+    Types.HashMap(_) => Types.List([Types.Symbol("quote"), ast]),
     _ => ast,
   }
 }
