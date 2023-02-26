@@ -172,6 +172,10 @@ let keyword = (val, env) => {
 }
 
 // type tests
+let is_number = (val, env) => match(val) { Types.Number(_) => true, _ => false }
+let is_string = (val, env) => match(val) { Types.String(_) => true, _ => false }
+let is_fn = (val, env) => match(val) { Types.Function(fn) => !fn.is_macro, _ => false }
+let is_macro = (val, env) => match(val) { Types.Function(fn) => fn.is_macro, _ => false }
 let is_list = (val, env) => match (val) { Types.List(_) => true, _ => false }
 let is_vector = (val, env) => match (val) { Types.Vector(_) => true, _ => false }
 let is_nil = (val, env) => match (val) { Types.Nil => true, _ => false }
@@ -474,6 +478,10 @@ provide let make_env: () -> Types.Env = () => {
     ("keyword", wrap_one(keyword)),
 
     // type tests
+    ("number?", wrap_is(is_number)),
+    ("string?", wrap_is(is_string)),
+    ("fn?", wrap_is(is_fn)),
+    ("macro?", wrap_is(is_macro)),
     ("list?", wrap_is(is_list)),
     ("vector?", wrap_is(is_vector)),
     ("nil?", wrap_is(is_nil)),
