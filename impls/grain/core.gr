@@ -256,6 +256,14 @@ let concat = (args, env) => {
   }
 }
 
+let conj = (args, env) => {
+  match (args) {
+    [Types.List(list), ...rest] => Ok(Types.List(List.append(List.reverse(rest), list))),
+    [Types.Vector(vector), ...rest] => Ok(Types.Vector(List.append(vector, rest))),
+    _ => Err("expected list or vector"),
+  }
+}
+
 // hash-map operators
 let hash_map = (args, env) => {
   let map = Reader.list_to_hash_map(args)
@@ -500,6 +508,7 @@ provide let make_env: () -> Types.Env = () => {
     ("rest", wrap_list(rest)),
     ("cons", wrap_two(cons)),
     ("concat", wrap(concat)),
+    ("conj", wrap(conj)),
 
     // hash-map operators
     ("hash-map", wrap(hash_map)),
