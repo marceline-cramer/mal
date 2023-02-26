@@ -6,6 +6,7 @@ include "./types"
 include "immutablemap"
 include "list"
 include "map"
+include "result"
 include "string"
 include "sys/file"
 
@@ -57,6 +58,30 @@ let wrap_list = (fn) => {
   }
 
   wrap_one(cb)
+}
+
+let wrap_map = (fn) => {
+  let cb = (args, env) => {
+    match (args) {
+      [Types.HashMap(map), ...args] => fn(map, args, env),
+      [Types.Nil, ...args] => fn(ImmutableMap.empty, args, env),
+      _ => Err("expected a hash-map or nil"),
+    }
+  }
+
+  wrap(cb)
+}
+
+let wrap_map_lookup = (fn) => {
+  let cb = (map, args, env) => {
+    match (args) {
+      [Types.Keyword(keyword)] => fn(Types.marshal_keyword(keyword), map, env),
+      [Types.String(string)] => fn(string, map, env),
+      _ => Err("expected keyword or string"),
+    }
+  }
+
+  wrap_map(cb)
 }
 
 let wrap_str = (fn) => {
@@ -225,6 +250,50 @@ let concat = (args, env) => {
     Some(err) => Err(err),
     None => Ok(Types.List(result)),
   }
+}
+
+// hash-map operators
+let hash_map = (args, env) => {
+  let map = Reader.list_to_hash_map(args)
+  Result.map((map) => Types.HashMap(map), map)
+}
+
+let assoc = (map, args, env) => {
+  match (Reader.list_to_hash_map(args)) {
+    Err(err) => Err(err),
+    Ok(new_map) => {
+      let filter = (key, val) => ImmutableMap.contains(key, new_map)
+      let filtered = ImmutableMap.reject(filter, map)
+      let new_map = ImmutableMap.toList(new_map)
+      let map = ImmutableMap.toList(filtered)
+      let joined = List.append(new_map, map)
+      Ok(Types.HashMap(ImmutableMap.fromList(joined)))
+    }
+  } 
+}
+
+let dissoc = (map, args, env) => Ok(Types.HashMap(ImmutableMap.empty))
+
+let get = (key, map, env) => {
+  match (ImmutableMap.get(key, map)) {
+    Some(val) => Ok(val),
+    None => Ok(Types.Nil),
+  }
+}
+
+let does_contain = (key, map, env) => {
+  Ok(Types.Bool(ImmutableMap.contains(key, map)))
+}
+
+let keys = (map, args, env) => {
+  let keys = ImmutableMap.keys(map)
+  let keys = List.map((key) => Types.String(key), keys)
+  Ok(Types.List(keys))
+}
+
+let vals = (map, args, env) => {
+  let vals = ImmutableMap.values(map)
+  Ok(Types.List(vals))
 }
 
 // string manipulation
@@ -412,6 +481,15 @@ provide let make_env: () -> Types.Env = () => {
     ("rest", wrap_list(rest)),
     ("cons", wrap_two(cons)),
     ("concat", wrap(concat)),
+
+    // hash-map operators
+    ("hash-map", wrap(hash_map)),
+    ("assoc", wrap_map(assoc)),
+    ("dissoc", wrap_map(dissoc)),
+    ("get", wrap_map_lookup(get)),
+    ("contains?", wrap_map_lookup(does_contain)),
+    ("keys", wrap_map(keys)),
+    ("vals", wrap_map(vals)),
 
     // string manipulation
     ("pr-str", wrap(pr_str)),
