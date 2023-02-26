@@ -170,7 +170,7 @@ eval_let_bindings = (bindings, env) => {
           }
         }
       },
-      [_] => {
+      _ => {
         err = Some("uneven let* bindings")
         break
       }
