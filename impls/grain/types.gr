@@ -4,6 +4,7 @@ include "immutablemap"
 include "list"
 include "map"
 include "option"
+include "regex"
 include "result"
 include "string"
 
@@ -50,12 +51,15 @@ provide let unmarshal_maybe_keyword = (str) => {
   }
 }
 
+let bs_escape_regex = Result.unwrap(Regex.make("\\\\"))
+
 provide let rec pr_str = (val, print_readably) => {
   match (val) {
     Nil => "nil",
     Bool(true) => "true",
     Bool(false) => "false",
     String(str) when print_readably => {
+      let str = Regex.replaceAll(bs_escape_regex, "\\", str)
       let str = String.replaceAll("\"", "\\\"", str)
       let str = String.replaceAll("\n", "\\n", str)
       "\"" ++ str ++ "\""

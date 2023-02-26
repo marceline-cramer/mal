@@ -12,6 +12,9 @@ include "./types"
 
 let regex = "[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\\\.|[^\\\\\"])*\"?|;.*|[^\\s\\[\\]{}('\"`,;)]*)"
 let regex = Result.unwrap(Regex.make(regex))
+let string_regex = "\"(?:\\.|[^\\\"])*\""
+let string_regex = Result.unwrap(Regex.make(string_regex))
+let bs_unescape_regex = Result.unwrap(Regex.make("\\\\"))
 
 provide record Reader {
   mut tokens: List<String>
@@ -152,20 +155,18 @@ read_atom = (reader, tok) => {
     "`" => quoted("quasiquote", reader),
     "~" => quoted("unquote", reader),
     "~@" => quoted("splice-unquote", reader),
+    string when Regex.isMatch(string_regex, string) => {
+      let last = String.length(string) - 1
+      let string = String.slice(1, last, string)
+      let string = String.replaceAll("\\\"", "\"", string)
+      let string = String.replaceAll("\\n", "\n", string)
+      let string = Regex.replaceAll(bs_unescape_regex, "\\", string)
+      Ok(Types.String(string))
+    },
+    string when String.startsWith("\"", string) => Err("unexpected EOF"),
     _ => match (Number.parseInt(tok, 10)) {
       Ok(number) => Ok(Types.Number(number)),
       Err(_) => match (String.charAt(0, tok)) {
-        '"' => {
-          let last = String.length(tok) - 1
-          if (String.charAt(last, tok) != '"') {
-            Err("unbalanced")
-          } else {
-            let string = String.slice(1, last, tok)
-            let string = String.replaceAll("\\\"", "\"", string)
-            let string = String.replaceAll("\\n", "\n", string)
-            Ok(Types.String(string))
-          }
-        },
         ':' => Ok(Types.Keyword(tok)),
         _ => Ok(Types.Symbol(tok)),  
       }
